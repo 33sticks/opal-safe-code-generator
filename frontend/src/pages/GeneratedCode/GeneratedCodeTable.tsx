@@ -16,17 +16,59 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Eye } from 'lucide-react'
+import { Eye, Copy, Check } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { GeneratedCode } from '@/types'
 import { format } from 'date-fns'
 import { CodeEditor } from '@/components/monaco/CodeEditor'
+import { useToast } from '@/hooks/use-toast'
+
+// Utility function to normalize code string - converts escape sequences to actual characters
+function normalizeCodeString(code: string): string {
+  if (!code) return ''
+  
+  // Replace literal escape sequences with actual characters
+  // This handles cases where code might be stored with escaped newlines
+  return code
+    .replace(/\\n/g, '\n')      // Convert \n to actual newline
+    .replace(/\\t/g, '\t')        // Convert \t to actual tab
+    .replace(/\\r/g, '\r')        // Convert \r to actual carriage return
+    .replace(/\\"/g, '"')         // Convert \" to actual quote
+    .replace(/\\'/g, "'")         // Convert \' to actual single quote
+    .replace(/\\\\/g, '\\')       // Convert \\ to single backslash (do this last)
+}
 
 export function GeneratedCodeTable() {
   const { data: codes, isLoading, error } = useGeneratedCodes()
   const [viewingCode, setViewingCode] = useState<number | null>(null)
   const { data: code } = useGeneratedCode(viewingCode || 0)
+  const [copied, setCopied] = useState(false)
+  const { toast } = useToast()
+
+  // Normalize the code string to ensure proper formatting
+  const normalizedCode = code?.generated_code ? normalizeCodeString(code.generated_code) : ''
+
+  const handleCopyCode = async () => {
+    if (!normalizedCode) return
+    
+    try {
+      // Copy the normalized (clean) JavaScript code
+      await navigator.clipboard.writeText(normalizedCode)
+      setCopied(true)
+      toast({
+        title: 'Copied!',
+        description: 'Code copied to clipboard',
+      })
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to copy code',
+        variant: 'destructive',
+      })
+    }
+  }
 
   if (isLoading) {
     return (
@@ -129,12 +171,33 @@ export function GeneratedCodeTable() {
                 </div>
               </div>
               <div>
-                <h4 className="font-medium mb-2">Generated Code:</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Generated Code:</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyCode}
+                    className="flex items-center gap-2"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Copy Code
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <CodeEditor
-                  value={code.generated_code}
+                  value={normalizedCode}
                   onChange={() => {}}
                   language="javascript"
                   height="400px"
+                  readOnly={true}
                 />
               </div>
             </div>

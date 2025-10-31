@@ -6,6 +6,7 @@ interface CodeEditorProps {
   onChange: (value: string | undefined) => void
   language?: string
   height?: string
+  readOnly?: boolean
 }
 
 export function CodeEditor({
@@ -13,6 +14,7 @@ export function CodeEditor({
   onChange,
   language = 'javascript',
   height = '300px',
+  readOnly = false,
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null)
 
@@ -37,6 +39,7 @@ export function CodeEditor({
           automaticLayout: true,
           tabSize: 2,
           wordWrap: 'on',
+          readOnly: readOnly,
         }}
       />
     </div>
