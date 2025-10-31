@@ -1,4 +1,5 @@
 """Application configuration using Pydantic Settings."""
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
 
@@ -11,6 +12,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     PORT: Optional[int] = 8000
     LOG_LEVEL: str = "INFO"
+    ANTHROPIC_API_KEY: str = Field(..., description="Anthropic API key for Claude")
     
     model_config = SettingsConfigDict(
         env_file=".env",

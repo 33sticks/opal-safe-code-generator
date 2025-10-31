@@ -25,12 +25,95 @@ async def seed_data():
     
     async with async_session_maker() as session:
         async with session.begin():
-            # VANS Brand
+            # VANS Brand with global template
             vans_brand = Brand(
                 name="VANS",
                 domain="vans.com",
                 status=BrandStatus.ACTIVE,
-                config={"theme": "skate", "region": "US", "currency": "USD"}
+                config={
+                    "theme": "skate",
+                    "region": "US",
+                    "currency": "USD",
+                    "global_template": """'use strict';
+
+// ============================================================================
+// TEST HEADER
+// ============================================================================
+/**
+ * Test ID: {test_id}
+ * Summary: {summary}
+ * Version: {version}
+ * Last Updated: {date}
+ * 
+ * Features:
+ * {features}
+ */
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+const CONFIG = {{
+    LOG_LEVEL: 'INFO', // Options: DEBUG, INFO, WARN, ERROR, NONE
+    // Add configurable thresholds/durations here
+}};
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+const LOG_PREFIX = '[{test_id}]';
+const utils = window.optimizely && window.optimizely.get ? window.optimizely.get('utils') : null;
+
+// ============================================================================
+// LOGGING UTILITIES
+// ============================================================================
+function log(level, message, data) {{
+    if (CONFIG.LOG_LEVEL === 'NONE') return;
+    
+    const levels = {{ DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 }};
+    const currentLevel = levels[CONFIG.LOG_LEVEL] || 1;
+    const messageLevel = levels[level] || 1;
+    
+    if (messageLevel >= currentLevel) {{
+        const logMessage = `${{LOG_PREFIX}} [${{level}}] ${{message}}`;
+        if (data) {{
+            console.log(logMessage, data);
+        }} else {{
+            console.log(logMessage);
+        }}
+    }}
+}}
+
+// ============================================================================
+// MAIN EXECUTION
+// ============================================================================
+if (!utils) {{
+    log('ERROR', 'Optimizely utils not available');
+}} else {{
+    utils.waitForElement('body', 10000).then(function() {{
+        try {{
+            log('INFO', 'Test execution started');
+            
+            // ================================================================
+            // PAGE-SPECIFIC CODE GOES HERE
+            // ================================================================
+            // Place your page-specific logic in this section
+            // Use available DOM selectors from the selectors list
+            // Follow the error handling pattern below
+            
+            
+            
+            // ================================================================
+            // ERROR HANDLING
+            // ================================================================
+            log('INFO', 'Test execution completed successfully');
+        }} catch (error) {{
+            log('ERROR', 'Test execution failed', error);
+        }}
+    }}).catch(function(error) {{
+        log('ERROR', 'Failed to wait for element', error);
+    }});
+}}"""
+                }
             )
             session.add(vans_brand)
             await session.flush()
