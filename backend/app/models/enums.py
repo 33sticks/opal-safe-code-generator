@@ -55,3 +55,9 @@ class SelectorStatus(str, Enum):
 class UserRole(str, Enum):
     ADMIN = "admin"
     USER = "user"
+
+
+class ConversationStatus(str, Enum):
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    ABANDONED = "abandoned"

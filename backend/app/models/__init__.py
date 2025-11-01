@@ -6,6 +6,8 @@ from app.models.code_rule import CodeRule
 from app.models.generated_code import GeneratedCode
 from app.models.user import User
 from app.models.session import Session
+from app.models.conversation import Conversation
+from app.models.message import Message
 
 __all__ = [
     "Brand",
@@ -15,4 +17,6 @@ __all__ = [
     "GeneratedCode",
     "User",
     "Session",
+    "Conversation",
+    "Message",
 ]

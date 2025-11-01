@@ -1,4 +1,10 @@
 import axios from 'axios'
+import type {
+  ChatMessageRequest,
+  ChatMessageResponse,
+  ConversationPreview,
+  ConversationHistoryResponse,
+} from '../types/chat'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
 
@@ -55,4 +61,30 @@ api.interceptors.response.use(
 )
 
 export default api
+
+// Chat API functions
+export async function sendChatMessage(
+  message: string,
+  conversationId?: string | null
+): Promise<ChatMessageResponse> {
+  const response = await api.post<ChatMessageResponse>('/chat/message', {
+    message,
+    conversation_id: conversationId || null,
+  })
+  return response.data
+}
+
+export async function getConversations(): Promise<ConversationPreview[]> {
+  const response = await api.get<ConversationPreview[]>('/chat/conversations')
+  return response.data
+}
+
+export async function getConversation(
+  conversationId: string
+): Promise<ConversationHistoryResponse> {
+  const response = await api.get<ConversationHistoryResponse>(
+    `/chat/conversations/${conversationId}`
+  )
+  return response.data
+}
 
