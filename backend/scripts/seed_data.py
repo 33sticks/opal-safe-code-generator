@@ -19,8 +19,15 @@ from app.config import settings
 
 async def seed_data():
     """Seed database with VANS and Timberland brand data."""
+    # Transform DATABASE_URL to use asyncpg driver (same as database.py)
+    database_url = settings.DATABASE_URL
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    
     # Create engine and session
-    engine = create_async_engine(settings.DATABASE_URL, echo=False)
+    engine = create_async_engine(database_url, echo=False)
     async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     
     async with async_session_maker() as session:
