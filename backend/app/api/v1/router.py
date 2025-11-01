@@ -1,6 +1,6 @@
 """Main API router for v1."""
 from fastapi import APIRouter
-from app.api.v1 import brands, templates, selectors, rules, generated_code, opal
+from app.api.v1 import brands, templates, selectors, rules, generated_code, opal, admin
 
 router = APIRouter()
 
@@ -10,4 +10,4 @@ router.include_router(selectors.router, prefix="/selectors", tags=["selectors"])
 router.include_router(rules.router, prefix="/rules", tags=["rules"])
 router.include_router(generated_code.router, prefix="/generated-code", tags=["generated-code"])
 router.include_router(opal.router, prefix="/opal", tags=["opal"])
-
+router.include_router(admin.router, prefix="/admin", tags=["admin"])
