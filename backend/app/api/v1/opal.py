@@ -1,7 +1,8 @@
 """Opal custom tool API endpoints for code generation."""
 import logging
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body
+from starlette.requests import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel, Field
@@ -27,12 +28,14 @@ class OpalGenerateCodeRequest(BaseModel):
 
 
 @router.get("/discovery", status_code=status.HTTP_200_OK)
-async def discovery():
+async def discovery(request: Request):
     """
     Opal discovery endpoint that returns tool manifest.
     
     Returns the tool definition that Opal uses to register this custom tool.
     """
+    base_url = str(request.base_url).rstrip('/')
+    
     return {
         "name": "Opal Safe Code Generator",
         "description": "Generate safe, brand-specific A/B test code using admin-curated knowledge and Claude AI",
@@ -41,7 +44,7 @@ async def discovery():
                 "name": "generate_code",
                 "description": "Generate safe JavaScript code for A/B tests using brand-specific templates and selectors",
                 "http_method": "POST",
-                "endpoint": "/generate-code",
+                "endpoint": f"{base_url}/api/v1/opal/generate-code",
                 "parameters": [
                     {
                         "name": "brand_name",
