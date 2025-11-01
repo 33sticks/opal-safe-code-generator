@@ -48,11 +48,22 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_migrations_online() -> None:
     """Run migrations in 'online' mode with async engine."""
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = get_url()
+    # Get config section
+    alembic_config = config.get_section(config.config_ini_section, {})
+    
+    # Set the URL
+    alembic_config["sqlalchemy.url"] = get_url()
+    
+    # Transform DATABASE_URL to use asyncpg driver
+    if "sqlalchemy.url" in alembic_config:
+        database_url = alembic_config["sqlalchemy.url"]
+        if database_url.startswith("postgresql://"):
+            alembic_config["sqlalchemy.url"] = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif database_url.startswith("postgres://"):
+            alembic_config["sqlalchemy.url"] = database_url.replace("postgres://", "postgresql+asyncpg://", 1)
     
     connectable = async_engine_from_config(
-        configuration,
+        alembic_config,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
