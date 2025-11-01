@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
     name: Optional[str]
     role: UserRole
     brand_id: Optional[int]
+    brand_role: str
     
     class Config:
         from_attributes = True

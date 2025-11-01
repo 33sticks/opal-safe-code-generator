@@ -4,6 +4,10 @@ import api, {
   reviewGeneratedCode,
   getCodeConversation,
   deleteGeneratedCode,
+  getNotifications,
+  markNotificationAsRead,
+  getUnreadCount,
+  getMyRequests,
 } from '@/lib/api'
 import type {
   Brand,
@@ -20,6 +24,8 @@ import type {
   CodeRuleUpdate,
   GeneratedCode,
   CodeStatus,
+  Notification,
+  UnreadCount,
 } from '@/types'
 
 // Brands
@@ -291,6 +297,40 @@ export function useDeleteGeneratedCode() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['generated-code'] })
     },
+  })
+}
+
+// Notifications
+export function useNotifications(unreadOnly?: boolean) {
+  return useQuery<Notification[]>({
+    queryKey: ['notifications', { unreadOnly }],
+    queryFn: () => getNotifications(unreadOnly, 20),
+  })
+}
+
+export function useUnreadCount() {
+  return useQuery<UnreadCount>({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: () => getUnreadCount(),
+    refetchInterval: 30000, // Poll every 30 seconds
+  })
+}
+
+export function useMarkAsRead() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => markNotificationAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+// My Requests
+export function useMyRequests(status?: string) {
+  return useQuery<GeneratedCode[]>({
+    queryKey: ['my-requests', { status }],
+    queryFn: () => getMyRequests({ status, limit: 50, offset: 0 }),
   })
 }
 

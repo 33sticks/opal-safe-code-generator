@@ -18,6 +18,7 @@ class User(Base):
     name = Column(String(255), nullable=True)
     role = Column(SQLEnum(UserRole, native_enum=False, length=50), nullable=False)
     brand_id = Column(Integer, ForeignKey("brands.id", ondelete="SET NULL"), nullable=True, index=True)
+    brand_role = Column(String(50), nullable=False, server_default='brand_user', index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

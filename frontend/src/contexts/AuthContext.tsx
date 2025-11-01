@@ -11,6 +11,10 @@ interface AuthContextType {
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
   isAdmin: () => boolean
+  isSuperAdmin: () => boolean
+  isBrandAdmin: () => boolean
+  isBrandUser: () => boolean
+  canManageBrand: (brandId: number) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,6 +32,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user?.role === 'admin'
   }
 
+  const isSuperAdmin = () => {
+    return user?.brand_role === 'super_admin'
+  }
+
+  const isBrandAdmin = () => {
+    return user?.brand_role === 'brand_admin'
+  }
+
+  const isBrandUser = () => {
+    return user?.brand_role === 'brand_user'
+  }
+
+  const canManageBrand = (brandId: number) => {
+    if (!user) return false
+    if (isSuperAdmin()) return true
+    if (isBrandAdmin() && user.brand_id === brandId) return true
+    return false
+  }
+
   const checkAuth = async () => {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) {
@@ -37,7 +60,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await api.get('/auth/me')
-      setUser(response.data)
+      const userData = response.data
+      
+      // If user has brand_id and is not super_admin, fetch brand name
+      if (userData.brand_id && userData.brand_role !== 'super_admin') {
+        try {
+          const brandResponse = await api.get(`/brands/${userData.brand_id}`)
+          userData.brand_name = brandResponse.data.name
+        } catch (error) {
+          // If brand fetch fails, continue without brand_name
+          console.warn('Failed to fetch brand name:', error)
+        }
+      }
+      
+      setUser(userData)
     } catch (error) {
       // Token invalid or expired
       localStorage.removeItem(TOKEN_KEY)
@@ -57,6 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { token, user: userData } = response.data
       
       localStorage.setItem(TOKEN_KEY, token)
+      
+      // If user has brand_id and is not super_admin, fetch brand name
+      if (userData.brand_id && userData.brand_role !== 'super_admin') {
+        try {
+          const brandResponse = await api.get(`/brands/${userData.brand_id}`)
+          userData.brand_name = brandResponse.data.name
+        } catch (error) {
+          // If brand fetch fails, continue without brand_name
+          console.warn('Failed to fetch brand name:', error)
+        }
+      }
+      
       setUser(userData)
       
       // Redirect based on role
@@ -97,6 +145,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         checkAuth,
         isAdmin,
+        isSuperAdmin,
+        isBrandAdmin,
+        isBrandUser,
+        canManageBrand,
       }}
     >
       {children}

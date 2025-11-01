@@ -58,7 +58,8 @@ async def login(
             email=user.email,
             name=user.name,
             role=user.role,
-            brand_id=user.brand_id
+            brand_id=user.brand_id,
+            brand_role=user.brand_role
         )
     )
 
@@ -100,7 +101,8 @@ async def get_current_user_info(
         email=current_user.email,
         name=current_user.name,
         role=current_user.role,
-        brand_id=current_user.brand_id
+        brand_id=current_user.brand_id,
+        brand_role=current_user.brand_role
     )
 
 
@@ -156,6 +158,7 @@ async def register(
         email=new_user.email,
         name=new_user.name,
         role=new_user.role,
-        brand_id=new_user.brand_id
+        brand_id=new_user.brand_id,
+        brand_role=new_user.brand_role
     )
 

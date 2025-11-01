@@ -7,30 +7,52 @@ import {
   Code,
   MessageSquare,
   Menu,
-  X
+  X,
+  Bell,
+  FolderOpen
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 
-const adminNavigation = [
+const superAdminNavigation = [
   { name: 'Brands', href: '/brands', icon: Building2 },
   { name: 'Templates', href: '/templates', icon: FileText },
   { name: 'Selectors', href: '/selectors', icon: MousePointerClick },
   { name: 'Rules', href: '/rules', icon: Shield },
   { name: 'Generated Code', href: '/generated-code', icon: Code },
+  { name: 'Chat', href: '/chat', icon: MessageSquare },
+  { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
 ]
 
-const userNavigation = [
+const brandAdminNavigation = [
+  { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'Selectors', href: '/selectors', icon: MousePointerClick },
+  { name: 'Rules', href: '/rules', icon: Shield },
+  { name: 'Generated Code', href: '/generated-code', icon: Code },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
+  { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
+]
+
+const brandUserNavigation = [
+  { name: 'Chat', href: '/chat', icon: MessageSquare },
+  { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
 ]
 
 export function Sidebar() {
   const location = useLocation()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const { isAdmin } = useAuth()
+  const { isSuperAdmin, isBrandAdmin, isBrandUser } = useAuth()
   
-  const navigation = isAdmin() ? adminNavigation : userNavigation
+  let navigation = brandUserNavigation
+  if (isSuperAdmin()) {
+    navigation = superAdminNavigation
+  } else if (isBrandAdmin()) {
+    navigation = brandAdminNavigation
+  }
 
   return (
     <>

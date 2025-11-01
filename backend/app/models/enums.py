@@ -69,3 +69,16 @@ class CodeStatus(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     DEPLOYED = "deployed"
+
+
+class BrandRole(str, Enum):
+    SUPER_ADMIN = "super_admin"
+    BRAND_ADMIN = "brand_admin"
+    BRAND_USER = "brand_user"
+
+
+class NotificationType(str, Enum):
+    CODE_APPROVED = "code_approved"
+    CODE_REJECTED = "code_rejected"
+    CODE_UNDER_REVIEW = "code_under_review"
+    CODE_NEEDS_REVIEW = "code_needs_review"

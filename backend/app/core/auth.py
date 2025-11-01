@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.api.deps import get_db
 from app.models.user import User
 from app.models.session import Session
-from app.models.enums import UserRole
+from app.models.enums import UserRole, BrandRole
 
 
 # Session expiration: 7 days
@@ -137,4 +137,47 @@ def require_role(required_role: str):
         return current_user
     
     return role_checker
+
+
+def get_user_brand_access(user: User) -> list[int]:
+    """
+    Get list of brand IDs user can access.
+    
+    Returns:
+        - Empty list for super_admin (access to all brands)
+        - List with single brand_id for brand_admin and brand_user
+    """
+    if user.brand_role == BrandRole.SUPER_ADMIN.value:
+        return []  # Empty list = access all
+    elif user.brand_id:
+        return [user.brand_id]
+    else:
+        return []  # No brand_id means no access (shouldn't happen, but safe)
+
+
+def require_brand_access(brand_id: int):
+    """
+    Dependency factory to check if user can access specific brand.
+    
+    Usage:
+        @router.get("/brands/{brand_id}/data")
+        async def get_brand_data(
+            brand_id: int,
+            current_user: User = Depends(require_brand_access(brand_id))
+        ):
+            ...
+    """
+    def check_access(
+        current_user: User = Depends(get_current_user_dependency)
+    ) -> User:
+        if current_user.brand_role == BrandRole.SUPER_ADMIN.value:
+            return current_user
+        if current_user.brand_id == brand_id:
+            return current_user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this brand"
+        )
+    
+    return check_access
 

@@ -19,7 +19,7 @@ from app.models.template import Template
 from app.models.dom_selector import DOMSelector
 from app.models.code_rule import CodeRule
 from app.models.generated_code import GeneratedCode
-from app.models.enums import TestType, PageType, SelectorStatus, ValidationStatus, ConversationStatus
+from app.models.enums import TestType, PageType, SelectorStatus, ValidationStatus, ConversationStatus, BrandRole, NotificationType
 from app.schemas.chat import (
     ChatMessageRequest,
     ChatMessageResponse,
@@ -31,6 +31,7 @@ from app.schemas.generated_code import GeneratedCodeResponse
 from app.core.auth import get_current_user_dependency
 from app.core.prompts.chat_prompt import build_chat_prompt, build_conversation_messages
 from app.services.code_generator import CodeGeneratorService
+from app.services.notification_service import NotificationService
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -397,6 +398,30 @@ async def send_message(
                     db.add(generated_code_record)
                     await db.commit()
                     await db.refresh(generated_code_record)
+                    
+                    # Notify brand admins about new code that needs review
+                    # Get brand admins for this brand
+                    admin_query = select(User).where(
+                        User.brand_id == generated_code_record.brand_id,
+                        User.brand_role == BrandRole.BRAND_ADMIN.value
+                    )
+                    result = await db.execute(admin_query)
+                    brand_admins = result.scalars().all()
+                    
+                    # Create notification for each brand admin
+                    for admin in brand_admins:
+                        # Extract change description from request data
+                        change_description = generated_code_record.request_data.get('extracted_params', {}).get('change_description', 'Code generation request')
+                        user_display_name = current_user.name or current_user.email
+                        
+                        await NotificationService.create_notification(
+                            db=db,
+                            user_id=admin.id,
+                            generated_code_id=generated_code_record.id,
+                            notification_type=NotificationType.CODE_NEEDS_REVIEW.value,
+                            title="New Code Needs Review",
+                            message=f"New code request from {user_display_name}: {change_description}"
+                        )
                     
                     # Link message to generated code
                     assistant_message.generated_code_id = generated_code_record.id

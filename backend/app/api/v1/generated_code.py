@@ -21,7 +21,9 @@ from app.schemas.generated_code import (
     ConversationForCodeResponse
 )
 from app.core.exceptions import NotFoundException
-from app.core.auth import require_role
+from app.core.auth import require_role, get_user_brand_access
+from app.services.notification_service import NotificationService
+from app.models.enums import NotificationType
 
 router = APIRouter()
 
@@ -46,7 +48,12 @@ async def list_generated_code(
         )
     )
     
-    # Apply filters
+    # Filter by brand access first
+    accessible_brands = get_user_brand_access(current_user)
+    if accessible_brands:  # Not super admin - filter to their brand
+        query = query.where(GeneratedCode.brand_id.in_(accessible_brands))
+    
+    # Apply status filter
     if status:
         try:
             status_enum = CodeStatus(status.lower())
@@ -57,6 +64,7 @@ async def list_generated_code(
                 detail=f"Invalid status: {status}. Must be one of: {', '.join([s.value for s in CodeStatus])}"
             )
     
+    # Additional brand_id filter (for super admins)
     if brand_id:
         query = query.where(GeneratedCode.brand_id == brand_id)
     
@@ -167,6 +175,27 @@ async def review_generated_code(
     
     # Load reviewer relationship
     await db.refresh(generated_code, ["reviewer"])
+    
+    # Create notification for user
+    if generated_code.user_id:
+        if review_request.status == "approved":
+            await NotificationService.create_notification(
+                db=db,
+                user_id=generated_code.user_id,
+                generated_code_id=generated_code.id,
+                notification_type=NotificationType.CODE_APPROVED.value,
+                title="Code Approved!",
+                message=f"Your code request has been approved.{' ' + review_request.reviewer_notes if review_request.reviewer_notes else ''}"
+            )
+        elif review_request.status == "rejected":
+            await NotificationService.create_notification(
+                db=db,
+                user_id=generated_code.user_id,
+                generated_code_id=generated_code.id,
+                notification_type=NotificationType.CODE_REJECTED.value,
+                title="Code Requires Changes",
+                message=f"Your code request needs revision.{' ' + review_request.reviewer_notes if review_request.reviewer_notes else ' No reason provided.'}"
+            )
     
     # Build response
     reviewer_info = None

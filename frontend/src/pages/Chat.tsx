@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChatLayout } from '@/components/chat/ChatLayout'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { CheckCircle } from 'lucide-react'
 import { sendChatMessage, getConversations, getConversation } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 import type { Message, ConversationPreview, ChatMessageResponse, GeneratedCode } from '@/types/chat'
@@ -10,8 +14,10 @@ export function Chat() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [generatedCodeMap, setGeneratedCodeMap] = useState<Map<number, GeneratedCode>>(new Map())
+  const [showCodeSubmitted, setShowCodeSubmitted] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   // Fetch conversations list
   const {
@@ -87,6 +93,10 @@ export function Chat() {
           newMap.set(response.generated_code!.id, response.generated_code!)
           return newMap
         })
+        // Show success message
+        setShowCodeSubmitted(true)
+        // Auto-hide after 10 seconds
+        setTimeout(() => setShowCodeSubmitted(false), 10000)
       }
       
       // Update selected conversation ID if it's new
@@ -154,6 +164,38 @@ export function Chat() {
 
   return (
     <div className="h-full flex flex-col">
+      {showCodeSubmitted && (
+        <Card className="m-4 border-green-200 bg-green-50 dark:bg-green-950">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <span className="text-sm font-medium text-green-900 dark:text-green-100">
+                  Code submitted for review
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigate('/my-requests')
+                    setShowCodeSubmitted(false)
+                  }}
+                >
+                  View My Requests
+                </Button>
+                <button
+                  onClick={() => setShowCodeSubmitted(false)}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <ChatLayout
         conversations={conversations}
         selectedConversationId={selectedConversationId}

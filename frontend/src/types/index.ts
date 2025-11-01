@@ -1,10 +1,14 @@
 // User and auth types
+export type BrandRole = 'super_admin' | 'brand_admin' | 'brand_user'
+
 export interface User {
   id: number
   email: string
   name: string | null
   role: 'admin' | 'user'
   brand_id: number | null
+  brand_role: BrandRole
+  brand_name?: string
 }
 
 export interface LoginResponse {
@@ -222,4 +226,21 @@ export interface GeneratedCodeUpdate {
   user_feedback?: string
   deployment_status?: DeploymentStatus
   error_logs?: Record<string, any>
+}
+
+// Notification types
+export interface Notification {
+  id: number
+  type: string
+  title: string
+  message: string
+  read: boolean
+  read_at: string | null
+  created_at: string
+  generated_code_id?: number | null
+  user_id: number
+}
+
+export interface UnreadCount {
+  count: number
 }

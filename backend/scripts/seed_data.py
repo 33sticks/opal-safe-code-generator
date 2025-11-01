@@ -13,7 +13,7 @@ from app.database import Base
 from app.models import Brand, Template, DOMSelector, CodeRule, GeneratedCode, User
 from app.models.enums import (
     BrandStatus, TestType, PageType, RuleType,
-    SelectorStatus, UserRole
+    SelectorStatus, UserRole, BrandRole
 )
 from app.config import settings
 
@@ -476,15 +476,41 @@ function testCheckoutPage() {
         if not admin_user:
             admin_user = User(
                 email="admin@opalsafecode.com",
-                name="Admin User",
+                name="Super Admin",
                 role=UserRole.ADMIN,
-                brand_id=None
+                brand_id=None,
+                brand_role=BrandRole.SUPER_ADMIN.value
             )
             admin_user.set_password("changeme123")
             session.add(admin_user)
-            print("✅ Created admin user: admin@opalsafecode.com / changeme123")
+            print("✅ Created super admin user: admin@opalsafecode.com / changeme123")
         else:
-            print("ℹ️  Admin user already exists")
+            # Update existing admin to super_admin
+            admin_user.brand_role = BrandRole.SUPER_ADMIN.value
+            admin_user.name = "Super Admin"
+            print("✅ Updated admin user to super_admin: admin@opalsafecode.com")
+        
+        # Create VANS brand admin
+        vans_admin_result = await session.execute(
+            select(User).where(User.email == "admin@vans.com")
+        )
+        vans_admin_user = vans_admin_result.scalar_one_or_none()
+        
+        if not vans_admin_user:
+            vans_admin_user = User(
+                email="admin@vans.com",
+                name="VANS Admin",
+                role=UserRole.ADMIN,
+                brand_id=vans_brand.id,
+                brand_role=BrandRole.BRAND_ADMIN.value
+            )
+            vans_admin_user.set_password("changeme123")
+            session.add(vans_admin_user)
+            print("✅ Created VANS brand admin: admin@vans.com / changeme123")
+        else:
+            # Update existing to brand_admin
+            vans_admin_user.brand_role = BrandRole.BRAND_ADMIN.value
+            print("✅ Updated VANS admin to brand_admin: admin@vans.com")
         
         user_result = await session.execute(
             select(User).where(User.email == "user@vans.com")
@@ -496,13 +522,16 @@ function testCheckoutPage() {
                 email="user@vans.com",
                 name="VANS User",
                 role=UserRole.USER,
-                brand_id=vans_brand.id
+                brand_id=vans_brand.id,
+                brand_role=BrandRole.BRAND_USER.value
             )
             user_user.set_password("changeme123")
             session.add(user_user)
-            print("✅ Created user: user@vans.com / changeme123")
+            print("✅ Created VANS user: user@vans.com / changeme123")
         else:
-            print("ℹ️  User already exists")
+            # Update existing user to brand_user
+            user_user.brand_role = BrandRole.BRAND_USER.value
+            print("✅ Updated VANS user to brand_user: user@vans.com")
         
         await session.commit()
         print("\n✅ Seed data loaded successfully!")

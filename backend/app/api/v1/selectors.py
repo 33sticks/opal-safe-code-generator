@@ -10,7 +10,7 @@ from app.models.brand import Brand
 from app.models.user import User
 from app.schemas.dom_selector import DOMSelectorCreate, DOMSelectorUpdate, DOMSelectorResponse
 from app.core.exceptions import NotFoundException
-from app.core.auth import require_role
+from app.core.auth import require_role, get_user_brand_access
 
 router = APIRouter()
 
@@ -23,9 +23,15 @@ async def list_selectors(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin"))
 ):
-    """List all DOM selectors with optional brand filter."""
+    """List DOM selectors with optional brand filter. Filtered by user's brand access."""
     query = select(DOMSelector)
     
+    # Filter by brand access first
+    accessible_brands = get_user_brand_access(current_user)
+    if accessible_brands:  # Not super admin - filter to their brand
+        query = query.where(DOMSelector.brand_id.in_(accessible_brands))
+    
+    # Additional brand_id filter (for super admins)
     if brand_id:
         query = query.where(DOMSelector.brand_id == brand_id)
     

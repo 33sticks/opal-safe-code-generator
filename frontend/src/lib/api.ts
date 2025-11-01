@@ -5,7 +5,7 @@ import type {
   ConversationHistoryResponse,
   ConversationForCodeResponse,
 } from '../types/chat'
-import type { GeneratedCode, CodeStatus } from '../types'
+import type { GeneratedCode, CodeStatus, Notification, UnreadCount } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
 
@@ -123,5 +123,35 @@ export async function getCodeConversation(
 
 export async function deleteGeneratedCode(id: number): Promise<void> {
   await api.delete(`/generated-code/${id}`)
+}
+
+// Notification API functions
+export async function getNotifications(
+  unreadOnly?: boolean,
+  limit?: number
+): Promise<Notification[]> {
+  const response = await api.get<Notification[]>('/notifications/', {
+    params: { unread_only: unreadOnly, limit },
+  })
+  return response.data
+}
+
+export async function markNotificationAsRead(id: number): Promise<void> {
+  await api.post(`/notifications/${id}/read`)
+}
+
+export async function getUnreadCount(): Promise<UnreadCount> {
+  const response = await api.get<UnreadCount>('/notifications/unread-count')
+  return response.data
+}
+
+// My Requests API functions
+export async function getMyRequests(params?: {
+  status?: string
+  limit?: number
+  offset?: number
+}): Promise<GeneratedCode[]> {
+  const response = await api.get<GeneratedCode[]>('/my-requests/', { params })
+  return response.data
 }
 

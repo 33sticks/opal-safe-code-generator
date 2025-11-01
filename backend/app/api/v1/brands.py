@@ -10,7 +10,8 @@ from app.models.brand import Brand
 from app.models.user import User
 from app.schemas.brand import BrandCreate, BrandUpdate, BrandResponse
 from app.core.exceptions import NotFoundException, ConflictException
-from app.core.auth import require_role
+from app.core.auth import require_role, get_user_brand_access, get_current_user_dependency
+from app.models.enums import BrandRole
 
 router = APIRouter()
 
@@ -22,8 +23,16 @@ async def list_brands(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin"))
 ):
-    """List all brands with pagination."""
-    result = await db.execute(select(Brand).offset(skip).limit(limit))
+    """List brands with pagination. Super admin sees all, others see only their brand."""
+    query = select(Brand)
+    
+    # Filter by brand access
+    accessible_brands = get_user_brand_access(current_user)
+    if accessible_brands:  # Not super admin - filter to their brand
+        query = query.where(Brand.id.in_(accessible_brands))
+    
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     brands = result.scalars().all()
     return brands
 
@@ -52,9 +61,17 @@ async def create_brand(
 async def get_brand(
     brand_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("admin"))
+    current_user: User = Depends(get_current_user_dependency)
 ):
-    """Get a brand by ID."""
+    """Get a brand by ID. Users can access their own brand."""
+    # Check brand access manually inside the function
+    if current_user.brand_role != BrandRole.SUPER_ADMIN.value:
+        if current_user.brand_id != brand_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this brand"
+            )
+    
     result = await db.execute(select(Brand).where(Brand.id == brand_id))
     brand = result.scalar_one_or_none()
     

@@ -10,7 +10,7 @@ from app.models.brand import Brand
 from app.models.user import User
 from app.schemas.code_rule import CodeRuleCreate, CodeRuleUpdate, CodeRuleResponse
 from app.core.exceptions import NotFoundException
-from app.core.auth import require_role
+from app.core.auth import require_role, get_user_brand_access
 
 router = APIRouter()
 
@@ -23,9 +23,15 @@ async def list_rules(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin"))
 ):
-    """List all code rules with optional brand filter."""
+    """List code rules with optional brand filter. Filtered by user's brand access."""
     query = select(CodeRule)
     
+    # Filter by brand access first
+    accessible_brands = get_user_brand_access(current_user)
+    if accessible_brands:  # Not super admin - filter to their brand
+        query = query.where(CodeRule.brand_id.in_(accessible_brands))
+    
+    # Additional brand_id filter (for super admins)
     if brand_id:
         query = query.where(CodeRule.brand_id == brand_id)
     
