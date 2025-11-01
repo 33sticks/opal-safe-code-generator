@@ -235,3 +235,37 @@ utils.waitForElement("button[data-test-id='vf-button']", 10000).then(function(ad
     except Exception as e:
         await db.rollback()
         raise Exception(f"Seed failed: {str(e)}")
+
+
+@router.post("/migrate")
+async def run_migrations():
+    """Run database migrations. TEMPORARY - for setup only."""
+    try:
+        import subprocess
+        import os
+        
+        # Get the backend directory
+        backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        
+        # Run alembic upgrade head
+        result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            cwd=backend_dir,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            return {
+                "message": "Migrations completed successfully",
+                "output": result.stdout
+            }
+        else:
+            return {
+                "message": "Migration failed",
+                "error": result.stderr,
+                "returncode": result.returncode
+            }
+            
+    except Exception as e:
+        raise Exception(f"Migration failed: {str(e)}")
