@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, isAdmin, user } = useAuth()
+  const { isAuthenticated, loading, isAdmin } = useAuth()
 
   // Show loading state while checking auth
   if (loading) {
