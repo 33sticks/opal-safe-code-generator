@@ -45,7 +45,7 @@ const brandUserNavigation = [
 export function Sidebar() {
   const location = useLocation()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const { isSuperAdmin, isBrandAdmin, isBrandUser } = useAuth()
+  const { isSuperAdmin, isBrandAdmin } = useAuth()
   
   let navigation = brandUserNavigation
   if (isSuperAdmin()) {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Check, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Bell, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useUnreadCount, useNotifications, useMarkAsRead } from '@/hooks/useApi'
 import { Button } from '@/components/ui/button'

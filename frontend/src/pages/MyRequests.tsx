@@ -18,11 +18,6 @@ export function MyRequests() {
   const navigate = useNavigate()
   const { toast } = useToast()
 
-  // Debug: Log requests to verify brand_name is in the data
-  if (process.env.NODE_ENV === 'development' && allRequests.length > 0) {
-    console.log('MyRequests - Sample request:', allRequests[0])
-    console.log('MyRequests - brand_name in first request:', allRequests[0]?.brand_name)
-  }
 
   // Calculate counts from all requests
   const pendingCount = allRequests.filter(r => r.status === 'generated' || r.status === 'reviewed').length
@@ -265,7 +260,7 @@ function RequestCard({ request, onCopyCode, onDownloadCode, onViewConversation }
             </Button>
           </>
         )}
-        {(request.status === 'pending' || request.status === 'generated' || request.status === 'reviewed') && (
+        {(request.status === 'generated' || request.status === 'reviewed') && (
           <Button
             variant="outline"
             size="sm"
