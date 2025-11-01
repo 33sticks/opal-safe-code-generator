@@ -35,6 +35,9 @@ async def discovery(request: Request):
     Returns the tool definition that Opal uses to register this custom tool.
     """
     base_url = str(request.base_url).rstrip('/')
+    # Ensure HTTPS is used (Railway uses HTTPS in production)
+    if base_url.startswith('http://'):
+        base_url = base_url.replace('http://', 'https://', 1)
     
     return {
         "name": "Opal Safe Code Generator",
