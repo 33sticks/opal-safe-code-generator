@@ -182,10 +182,6 @@ function RequestCard({ request, onCopyCode, onDownloadCode, onViewConversation }
   // Use brand_name from API, fallback to brand_id if not available
   // Handle empty string, null, and undefined cases
   const brandDisplayName = (() => {
-    // Debug: Log the request object to see what we're receiving
-    if (process.env.NODE_ENV === 'development') {
-      console.log('RequestCard - request.brand_name:', request.brand_name, 'request.brand_id:', request.brand_id)
-    }
     
     // Explicitly check for brand_name in multiple ways
     if (request.brand_name && typeof request.brand_name === 'string' && request.brand_name.trim()) {
