@@ -41,7 +41,7 @@ async def discovery():
                 "name": "generate_code",
                 "description": "Generate safe JavaScript code for A/B tests using brand-specific templates and selectors",
                 "http_method": "POST",
-                "endpoint": "/api/v1/opal/generate-code",
+                "endpoint": "/generate-code",
                 "parameters": [
                     {
                         "name": "brand_name",
