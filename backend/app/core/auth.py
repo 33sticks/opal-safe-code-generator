@@ -115,6 +115,27 @@ async def get_current_user_dependency(
     return user
 
 
+def require_admin(
+    current_user: User = Depends(get_current_user_dependency)
+) -> User:
+    """
+    Dependency to require user to be super_admin or brand_admin.
+    
+    Usage:
+        @router.get("/admin-only")
+        async def admin_endpoint(
+            current_user: User = Depends(require_admin)
+        ):
+            ...
+    """
+    if current_user.brand_role not in [BrandRole.SUPER_ADMIN.value, BrandRole.BRAND_ADMIN.value]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint requires admin role"
+        )
+    return current_user
+
+
 def require_role(required_role: str):
     """
     Dependency factory for role-based access control.
@@ -129,7 +150,14 @@ def require_role(required_role: str):
     async def role_checker(
         current_user: User = Depends(get_current_user_dependency)
     ) -> User:
-        if current_user.role.value != required_role:
+        # Special handling for "admin" role - check brand_role instead
+        if required_role == "admin":
+            if current_user.brand_role not in [BrandRole.SUPER_ADMIN.value, BrandRole.BRAND_ADMIN.value]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="This endpoint requires admin role"
+                )
+        elif current_user.role.value != required_role:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"This endpoint requires {required_role} role"
