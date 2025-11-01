@@ -218,8 +218,11 @@ async def generate_code(
         logger.info(f"Generated code for brand {brand.name}, test_type {test_type}, ID: {generated_code_record.id}")
         
         # Return formatted response
+        # NOTE: generated_code is a plain Python string (not JSON-encoded)
+        # FastAPI will automatically JSON-encode it once when returning the response
+        # Do NOT use json.dumps() here as that would cause double-encoding
         return {
-            "generated_code": result["generated_code"],
+            "generated_code": result["generated_code"],  # Plain string with actual newlines
             "confidence_score": result["confidence_score"],
             "implementation_notes": result["implementation_notes"],
             "testing_checklist": result["testing_checklist"]
