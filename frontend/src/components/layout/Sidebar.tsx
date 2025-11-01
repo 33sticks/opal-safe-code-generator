@@ -9,7 +9,8 @@ import {
   Menu,
   X,
   Bell,
-  FolderOpen
+  FolderOpen,
+  Users
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ const superAdminNavigation = [
   { name: 'Selectors', href: '/selectors', icon: MousePointerClick },
   { name: 'Rules', href: '/rules', icon: Shield },
   { name: 'Generated Code', href: '/generated-code', icon: Code },
+  { name: 'Users', href: '/users', icon: Users },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
   { name: 'Notifications', href: '/notifications', icon: Bell },
@@ -31,6 +33,7 @@ const brandAdminNavigation = [
   { name: 'Selectors', href: '/selectors', icon: MousePointerClick },
   { name: 'Rules', href: '/rules', icon: Shield },
   { name: 'Generated Code', href: '/generated-code', icon: Code },
+  { name: 'Users', href: '/users', icon: Users },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
   { name: 'Notifications', href: '/notifications', icon: Bell },

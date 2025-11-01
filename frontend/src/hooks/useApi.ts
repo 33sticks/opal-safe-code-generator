@@ -8,7 +8,9 @@ import api, {
   markNotificationAsRead,
   getUnreadCount,
   getMyRequests,
+  createUser,
 } from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
 import type {
   Brand,
   BrandCreate,
@@ -331,6 +333,30 @@ export function useMyRequests(status?: string) {
   return useQuery<GeneratedCode[]>({
     queryKey: ['my-requests', { status }],
     queryFn: () => getMyRequests({ status, limit: 50, offset: 0 }),
+  })
+}
+
+// Users
+export function useCreateUser() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      toast({
+        title: 'Success',
+        description: 'User created successfully',
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.detail || 'Failed to create user',
+        variant: 'destructive',
+      })
+    },
   })
 }
 

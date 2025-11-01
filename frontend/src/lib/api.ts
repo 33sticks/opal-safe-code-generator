@@ -5,7 +5,7 @@ import type {
   ConversationHistoryResponse,
   ConversationForCodeResponse,
 } from '../types/chat'
-import type { GeneratedCode, CodeStatus, Notification, UnreadCount } from '../types'
+import type { GeneratedCode, CodeStatus, Notification, UnreadCount, User } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
 
@@ -152,6 +152,19 @@ export async function getMyRequests(params?: {
   offset?: number
 }): Promise<GeneratedCode[]> {
   const response = await api.get<GeneratedCode[]>('/my-requests/', { params })
+  return response.data
+}
+
+// User API functions
+export async function createUser(userData: {
+  email: string
+  password: string
+  name: string
+  brand_id?: number
+  brand_role: string
+  role?: string
+}): Promise<User> {
+  const response = await api.post<User>('/users', userData)
   return response.data
 }
 

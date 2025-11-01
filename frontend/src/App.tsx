@@ -13,6 +13,7 @@ import { RulesPage } from '@/pages/Rules/RulesPage'
 import { GeneratedCodePage } from '@/pages/GeneratedCode/GeneratedCodePage'
 import { Notifications } from '@/pages/Notifications'
 import { MyRequests } from '@/pages/MyRequests'
+import { UsersPage } from '@/pages/Users/UsersPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,16 @@ function App() {
                 <ProtectedRoute requiredRole="admin">
                   <Layout>
                     <GeneratedCodePage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Layout>
+                    <UsersPage />
                   </Layout>
                 </ProtectedRoute>
               }
