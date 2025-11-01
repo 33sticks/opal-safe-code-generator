@@ -5,8 +5,8 @@ anyio==4.11.0
 certifi==2025.10.5
 fastapi==0.120.3
 h11==0.16.0
-httpcore==1.0.9
-httpx==0.28.1
+httpx>=0.23.0,<0.28.0
+httpcore>=0.16.0,<2.0.0
 idna==3.11
 optimizely-opal.opal-tools-sdk==0.1.7.dev0
 pydantic==2.12.3
