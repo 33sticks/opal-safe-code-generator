@@ -157,7 +157,6 @@ export function GeneratedCodeTable() {
 
   const codeToView = viewingConversationId ? filteredCodes.find((c) => c.id === viewingConversationId) : null
   const codeToReview = reviewingCodeId ? filteredCodes.find((c) => c.id === reviewingCodeId) : null
-  const codeToDelete = deletingCodeId ? filteredCodes.find((c) => c.id === deletingCodeId) : null
 
   return (
     <>
@@ -326,7 +325,7 @@ export function GeneratedCodeTable() {
         <ViewConversationModal
           open={viewingConversationId !== null}
           onOpenChange={(open) => !open && setViewingConversationId(null)}
-          conversation={conversation}
+          conversation={conversation ?? null}
           isLoading={isLoadingConversation}
         />
       )}
