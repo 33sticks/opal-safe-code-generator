@@ -164,7 +164,7 @@ export async function createUser(userData: {
   brand_role: string
   role?: string
 }): Promise<User> {
-  const response = await api.post<User>('/users', userData)
+  const response = await api.post<User>('/users/', userData)
   return response.data
 }
 
