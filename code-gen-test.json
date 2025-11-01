@@ -1,0 +1,9 @@
+curl -X POST http://localhost:8000/api/v1/opal/generate-code \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parameters": {
+      "brand_name": "VANS",
+      "test_type": "pdp",
+      "test_description": "Display selected size on Add to Cart button when URL contains size parameter"
+    }
+  }' | jq -r '.generated_code'
