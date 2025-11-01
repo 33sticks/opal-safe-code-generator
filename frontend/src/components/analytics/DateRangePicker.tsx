@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, CalendarDays } from 'lucide-react'
+import { CalendarDays } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { subDays, format, startOfDay, endOfDay } from 'date-fns'
 

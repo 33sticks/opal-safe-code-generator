@@ -75,7 +75,7 @@ export function QualityMetricsComponent({ data, isLoading }: QualityMetricsProps
                 fill="#8884d8"
                 dataKey="value"
               >
-                {confidenceData.map((entry, index) => (
+                {confidenceData.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
