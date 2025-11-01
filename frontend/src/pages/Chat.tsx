@@ -150,7 +150,7 @@ export function Chat() {
   }
 
   // Show loading in message area when loading history
-  const isLoadingHistory = historyLoading && selectedConversationId
+  const isLoadingHistory = historyLoading && !!selectedConversationId
 
   return (
     <div className="h-full flex flex-col">
