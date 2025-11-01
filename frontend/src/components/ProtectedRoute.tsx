@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, isAdmin } = useAuth()
+  const { isAuthenticated, loading, isSuperAdmin, isBrandAdmin } = useAuth()
 
   // Show loading state while checking auth
   if (loading) {
@@ -26,9 +26,13 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   // Check role requirements
-  if (requiredRole === 'admin' && !isAdmin()) {
-    // User tried to access admin route, redirect to their chat page
-    return <Navigate to="/chat" replace />
+  if (requiredRole === 'admin') {
+    // Allow access if user is super_admin or brand_admin
+    const hasAdminAccess = isSuperAdmin() || isBrandAdmin()
+    if (!hasAdminAccess) {
+      // User tried to access admin route, redirect to their chat page
+      return <Navigate to="/chat" replace />
+    }
   }
 
   return <>{children}</>
