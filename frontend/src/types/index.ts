@@ -64,6 +64,8 @@ export enum SelectorStatus {
   DEPRECATED = 'deprecated',
 }
 
+export type CodeStatus = 'generated' | 'reviewed' | 'approved' | 'rejected' | 'deployed'
+
 // Brand types
 export interface Brand {
   id: number
@@ -177,14 +179,27 @@ export interface CodeRuleUpdate {
 export interface GeneratedCode {
   id: number
   brand_id: number
+  conversation_id?: string | null
+  user_id?: number | null
   request_data?: Record<string, any>
   generated_code: string
-  confidence_score?: number
+  confidence_score?: number | null
   validation_status: ValidationStatus
-  user_feedback?: string
+  user_feedback?: string | null
   deployment_status: DeploymentStatus
   error_logs?: Record<string, any>
+  status: CodeStatus
+  reviewer_id?: number | null
+  reviewed_at?: string | null
+  reviewer_notes?: string | null
+  approved_at?: string | null
+  rejection_reason?: string | null
   created_at: string
+  // Enhanced fields from API
+  brand_name?: string
+  user_email?: string
+  conversation_preview?: string
+  reviewer_email?: string
 }
 
 export interface GeneratedCodeCreate {

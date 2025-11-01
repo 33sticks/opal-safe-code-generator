@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-from app.models.enums import ValidationStatus, DeploymentStatus
+from app.models.enums import ValidationStatus, DeploymentStatus, CodeStatus
 
 
 class GeneratedCode(Base):
@@ -25,7 +25,16 @@ class GeneratedCode(Base):
     error_logs = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     
+    # Review fields
+    status = Column(String(50), nullable=False, default='generated', index=True)
+    reviewer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    reviewer_notes = Column(Text, nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    
     # Relationships
     brand = relationship("Brand", back_populates="generated_code")
     conversation = relationship("Conversation", backref="generated_code_items")
-    user = relationship("User", backref="generated_code_items")
+    user = relationship("User", backref="generated_code_items", foreign_keys=[user_id])
+    reviewer = relationship("User", backref="reviewed_code_items", foreign_keys=[reviewer_id])

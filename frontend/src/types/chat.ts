@@ -55,6 +55,25 @@ export interface ConversationHistoryResponse {
   updated_at: string
 }
 
+export interface ConversationForCodeResponse {
+  conversation_id: string
+  messages: Array<{
+    role: MessageRole
+    content: string
+    created_at: string | null
+  }>
+  user: {
+    id: number
+    email: string
+    name: string | null
+  }
+  brand: {
+    id: number
+    name: string
+    domain: string
+  } | null
+}
+
 // GeneratedCode type (duplicated to avoid circular dependency)
 export interface GeneratedCode {
   id: number

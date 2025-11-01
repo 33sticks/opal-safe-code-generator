@@ -61,3 +61,11 @@ class ConversationStatus(str, Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
     ABANDONED = "abandoned"
+
+
+class CodeStatus(str, Enum):
+    GENERATED = "generated"
+    REVIEWED = "reviewed"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    DEPLOYED = "deployed"

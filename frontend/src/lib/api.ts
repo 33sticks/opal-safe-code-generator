@@ -3,7 +3,9 @@ import type {
   ChatMessageResponse,
   ConversationPreview,
   ConversationHistoryResponse,
+  ConversationForCodeResponse,
 } from '../types/chat'
+import type { GeneratedCode, CodeStatus } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
 
@@ -85,5 +87,41 @@ export async function getConversation(
     `/chat/conversations/${conversationId}`
   )
   return response.data
+}
+
+// Generated Code API functions
+export async function getGeneratedCodes(params?: {
+  status?: CodeStatus
+  brand_id?: number
+  limit?: number
+  offset?: number
+}): Promise<GeneratedCode[]> {
+  const response = await api.get<GeneratedCode[]>('/generated-code/', { params })
+  return response.data
+}
+
+export async function reviewGeneratedCode(
+  id: number,
+  status: 'approved' | 'rejected',
+  notes?: string
+): Promise<GeneratedCode> {
+  const response = await api.post<GeneratedCode>(`/generated-code/${id}/review`, {
+    status,
+    reviewer_notes: notes,
+  })
+  return response.data
+}
+
+export async function getCodeConversation(
+  id: number
+): Promise<ConversationForCodeResponse> {
+  const response = await api.get<ConversationForCodeResponse>(
+    `/generated-code/${id}/conversation`
+  )
+  return response.data
+}
+
+export async function deleteGeneratedCode(id: number): Promise<void> {
+  await api.delete(`/generated-code/${id}`)
 }
 

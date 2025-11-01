@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
+import api, {
+  getGeneratedCodes,
+  reviewGeneratedCode,
+  getCodeConversation,
+  deleteGeneratedCode,
+} from '@/lib/api'
 import type {
   Brand,
   BrandCreate,
@@ -14,6 +19,7 @@ import type {
   CodeRuleCreate,
   CodeRuleUpdate,
   GeneratedCode,
+  CodeStatus,
 } from '@/types'
 
 // Brands
@@ -229,13 +235,15 @@ export function useDeleteRule() {
 }
 
 // Generated Code (read-only)
-export function useGeneratedCodes() {
+export function useGeneratedCodes(params?: {
+  status?: CodeStatus
+  brand_id?: number
+  limit?: number
+  offset?: number
+}) {
   return useQuery<GeneratedCode[]>({
-    queryKey: ['generated-code'],
-    queryFn: async () => {
-      const { data } = await api.get<GeneratedCode[]>('/generated-code/')
-      return data
-    },
+    queryKey: ['generated-code', params],
+    queryFn: () => getGeneratedCodes(params),
   })
 }
 
@@ -247,6 +255,42 @@ export function useGeneratedCode(id: number) {
       return data
     },
     enabled: !!id,
+  })
+}
+
+export function useReviewGeneratedCode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      notes,
+    }: {
+      id: number
+      status: 'approved' | 'rejected'
+      notes?: string
+    }) => reviewGeneratedCode(id, status, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['generated-code'] })
+    },
+  })
+}
+
+export function useCodeConversation(codeId: number | null) {
+  return useQuery({
+    queryKey: ['code-conversation', codeId],
+    queryFn: () => getCodeConversation(codeId!),
+    enabled: !!codeId,
+  })
+}
+
+export function useDeleteGeneratedCode() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => deleteGeneratedCode(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['generated-code'] })
+    },
   })
 }
 
