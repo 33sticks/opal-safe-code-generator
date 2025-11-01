@@ -7,8 +7,10 @@ from sqlalchemy import select
 from app.api.deps import get_db
 from app.models.template import Template
 from app.models.brand import Brand
+from app.models.user import User
 from app.schemas.template import TemplateCreate, TemplateUpdate, TemplateResponse
 from app.core.exceptions import NotFoundException
+from app.core.auth import require_role
 
 router = APIRouter()
 
@@ -18,7 +20,8 @@ async def list_templates(
     skip: int = 0,
     limit: int = 100,
     brand_id: Optional[int] = Query(None, description="Filter by brand ID"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """List all templates with optional brand filter."""
     query = select(Template)
@@ -35,7 +38,8 @@ async def list_templates(
 @router.post("/", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
 async def create_template(
     template: TemplateCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Create a new template."""
     # Verify brand exists
@@ -54,7 +58,8 @@ async def create_template(
 @router.get("/{template_id}", response_model=TemplateResponse, status_code=status.HTTP_200_OK)
 async def get_template(
     template_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Get a template by ID."""
     result = await db.execute(select(Template).where(Template.id == template_id))
@@ -70,7 +75,8 @@ async def get_template(
 async def update_template(
     template_id: int,
     template_update: TemplateUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Update a template."""
     result = await db.execute(select(Template).where(Template.id == template_id))
@@ -99,7 +105,8 @@ async def update_template(
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Delete a template."""
     result = await db.execute(select(Template).where(Template.id == template_id))

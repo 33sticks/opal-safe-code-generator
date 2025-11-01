@@ -5,13 +5,15 @@ import {
   MousePointerClick, 
   Shield, 
   Code,
+  MessageSquare,
   Menu,
   X
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
-const navigation = [
+const adminNavigation = [
   { name: 'Brands', href: '/brands', icon: Building2 },
   { name: 'Templates', href: '/templates', icon: FileText },
   { name: 'Selectors', href: '/selectors', icon: MousePointerClick },
@@ -19,9 +21,16 @@ const navigation = [
   { name: 'Generated Code', href: '/generated-code', icon: Code },
 ]
 
+const userNavigation = [
+  { name: 'Chat', href: '/chat', icon: MessageSquare },
+]
+
 export function Sidebar() {
   const location = useLocation()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const { isAdmin } = useAuth()
+  
+  const navigation = isAdmin() ? adminNavigation : userNavigation
 
   return (
     <>

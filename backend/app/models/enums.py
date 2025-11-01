@@ -50,3 +50,8 @@ class SelectorStatus(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     DEPRECATED = "deprecated"
+
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    USER = "user"

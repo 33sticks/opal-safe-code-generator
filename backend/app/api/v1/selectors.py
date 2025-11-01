@@ -7,8 +7,10 @@ from sqlalchemy import select
 from app.api.deps import get_db
 from app.models.dom_selector import DOMSelector
 from app.models.brand import Brand
+from app.models.user import User
 from app.schemas.dom_selector import DOMSelectorCreate, DOMSelectorUpdate, DOMSelectorResponse
 from app.core.exceptions import NotFoundException
+from app.core.auth import require_role
 
 router = APIRouter()
 
@@ -18,7 +20,8 @@ async def list_selectors(
     skip: int = 0,
     limit: int = 100,
     brand_id: Optional[int] = Query(None, description="Filter by brand ID"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """List all DOM selectors with optional brand filter."""
     query = select(DOMSelector)
@@ -35,7 +38,8 @@ async def list_selectors(
 @router.post("/", response_model=DOMSelectorResponse, status_code=status.HTTP_201_CREATED)
 async def create_selector(
     selector: DOMSelectorCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Create a new DOM selector."""
     # Verify brand exists
@@ -54,7 +58,8 @@ async def create_selector(
 @router.get("/{selector_id}", response_model=DOMSelectorResponse, status_code=status.HTTP_200_OK)
 async def get_selector(
     selector_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Get a DOM selector by ID."""
     result = await db.execute(select(DOMSelector).where(DOMSelector.id == selector_id))
@@ -70,7 +75,8 @@ async def get_selector(
 async def update_selector(
     selector_id: int,
     selector_update: DOMSelectorUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Update a DOM selector."""
     result = await db.execute(select(DOMSelector).where(DOMSelector.id == selector_id))
@@ -99,7 +105,8 @@ async def update_selector(
 @router.delete("/{selector_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_selector(
     selector_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Delete a DOM selector."""
     result = await db.execute(select(DOMSelector).where(DOMSelector.id == selector_id))

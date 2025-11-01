@@ -1,3 +1,18 @@
+// User and auth types
+export interface User {
+  id: number
+  email: string
+  name: string | null
+  role: 'admin' | 'user'
+  brand_id: number | null
+}
+
+export interface LoginResponse {
+  token: string
+  expires_at: string
+  user: User
+}
+
 // Enums
 export enum BrandStatus {
   ACTIVE = 'active',
@@ -193,4 +208,3 @@ export interface GeneratedCodeUpdate {
   deployment_status?: DeploymentStatus
   error_logs?: Record<string, any>
 }
-

@@ -4,6 +4,8 @@ from app.models.template import Template
 from app.models.dom_selector import DOMSelector
 from app.models.code_rule import CodeRule
 from app.models.generated_code import GeneratedCode
+from app.models.user import User
+from app.models.session import Session
 
 __all__ = [
     "Brand",
@@ -11,4 +13,6 @@ __all__ = [
     "DOMSelector",
     "CodeRule",
     "GeneratedCode",
+    "User",
+    "Session",
 ]

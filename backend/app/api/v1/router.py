@@ -1,9 +1,11 @@
 """Main API router for v1."""
 from fastapi import APIRouter
 from app.api.v1 import brands, templates, selectors, rules, generated_code, opal, admin
+from app.api.v1.endpoints import auth
 
 router = APIRouter()
 
+router.include_router(auth.router, prefix="/auth", tags=["auth"])
 router.include_router(brands.router, prefix="/brands", tags=["brands"])
 router.include_router(templates.router, prefix="/templates", tags=["templates"])
 router.include_router(selectors.router, prefix="/selectors", tags=["selectors"])

@@ -7,8 +7,10 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import get_db
 from app.models.brand import Brand
+from app.models.user import User
 from app.schemas.brand import BrandCreate, BrandUpdate, BrandResponse
 from app.core.exceptions import NotFoundException, ConflictException
+from app.core.auth import require_role
 
 router = APIRouter()
 
@@ -17,7 +19,8 @@ router = APIRouter()
 async def list_brands(
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """List all brands with pagination."""
     result = await db.execute(select(Brand).offset(skip).limit(limit))
@@ -28,7 +31,8 @@ async def list_brands(
 @router.post("/", response_model=BrandResponse, status_code=status.HTTP_201_CREATED)
 async def create_brand(
     brand: BrandCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Create a new brand."""
     # Check for duplicate name
@@ -47,7 +51,8 @@ async def create_brand(
 @router.get("/{brand_id}", response_model=BrandResponse, status_code=status.HTTP_200_OK)
 async def get_brand(
     brand_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Get a brand by ID."""
     result = await db.execute(select(Brand).where(Brand.id == brand_id))
@@ -63,7 +68,8 @@ async def get_brand(
 async def update_brand(
     brand_id: int,
     brand_update: BrandUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Update a brand."""
     result = await db.execute(select(Brand).where(Brand.id == brand_id))
@@ -92,7 +98,8 @@ async def update_brand(
 @router.delete("/{brand_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_brand(
     brand_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     """Delete a brand."""
     result = await db.execute(select(Brand).where(Brand.id == brand_id))
