@@ -12,6 +12,7 @@ interface ChatLayoutProps {
   onNewChat: () => void
   onSendMessage: (message: string) => void
   isSending?: boolean
+  isLoadingHistory?: boolean
 }
 
 export function ChatLayout({
@@ -23,6 +24,7 @@ export function ChatLayout({
   onNewChat,
   onSendMessage,
   isSending = false,
+  isLoadingHistory = false,
 }: ChatLayoutProps) {
   return (
     <div className="flex h-full">
@@ -33,7 +35,7 @@ export function ChatLayout({
         onNewChat={onNewChat}
       />
       <div className="flex-1 flex flex-col">
-        <MessageList messages={messages} generatedCodeMap={generatedCodeMap} />
+        <MessageList messages={messages} generatedCodeMap={generatedCodeMap} isLoading={isLoadingHistory} />
         <ChatInput onSendMessage={onSendMessage} disabled={isSending} />
       </div>
     </div>

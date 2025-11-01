@@ -1,6 +1,5 @@
 import axios from 'axios'
 import type {
-  ChatMessageRequest,
   ChatMessageResponse,
   ConversationPreview,
   ConversationHistoryResponse,

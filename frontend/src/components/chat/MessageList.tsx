@@ -1,18 +1,28 @@
 import { useEffect, useRef } from 'react'
 import { MessageBubble } from './MessageBubble'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import type { Message, GeneratedCode } from '@/types/chat'
 
 interface MessageListProps {
   messages: Message[]
   generatedCodeMap: Map<number, GeneratedCode>
+  isLoading?: boolean
 }
 
-export function MessageList({ messages, generatedCodeMap }: MessageListProps) {
+export function MessageList({ messages, generatedCodeMap, isLoading = false }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-4">

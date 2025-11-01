@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChatLayout } from '@/components/chat/ChatLayout'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { sendChatMessage, getConversations, getConversation } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 import type { Message, ConversationPreview, ChatMessageResponse, GeneratedCode } from '@/types/chat'
@@ -140,6 +141,17 @@ export function Chat() {
     )
   }
 
+  if (conversationsLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  // Show loading in message area when loading history
+  const isLoadingHistory = historyLoading && selectedConversationId
+
   return (
     <div className="h-full flex flex-col">
       <ChatLayout
@@ -151,6 +163,7 @@ export function Chat() {
         onNewChat={handleNewChat}
         onSendMessage={handleSendMessage}
         isSending={sendMessageMutation.isPending}
+        isLoadingHistory={isLoadingHistory}
       />
     </div>
   )

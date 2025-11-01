@@ -1,4 +1,4 @@
-import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns'
+import { formatDistanceToNow, isToday, isYesterday } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import type { ConversationPreview } from '@/types/chat'
