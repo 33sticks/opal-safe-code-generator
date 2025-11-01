@@ -6,6 +6,16 @@ import type {
   ConversationForCodeResponse,
 } from '../types/chat'
 import type { GeneratedCode, CodeStatus, Notification, UnreadCount, User } from '../types'
+import type {
+  AnalyticsOverview,
+  UsageDataPoint,
+  QualityMetrics,
+  BrandPerformance,
+  UserActivity,
+  LLMCostMetrics,
+  BrandLLMCost,
+  AnalyticsParams,
+} from '../types/analytics'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000';
 
@@ -165,6 +175,42 @@ export async function createUser(userData: {
   role?: string
 }): Promise<User> {
   const response = await api.post<User>('/users/', userData)
+  return response.data
+}
+
+// Analytics API functions
+export async function getAnalyticsOverview(params: AnalyticsParams): Promise<AnalyticsOverview> {
+  const response = await api.get<AnalyticsOverview>('/analytics/overview', { params })
+  return response.data
+}
+
+export async function getUsageOverTime(params: AnalyticsParams): Promise<UsageDataPoint[]> {
+  const response = await api.get<UsageDataPoint[]>('/analytics/usage-over-time', { params })
+  return response.data
+}
+
+export async function getQualityMetrics(params: AnalyticsParams): Promise<QualityMetrics> {
+  const response = await api.get<QualityMetrics>('/analytics/quality-metrics', { params })
+  return response.data
+}
+
+export async function getBrandPerformance(params: AnalyticsParams): Promise<BrandPerformance[]> {
+  const response = await api.get<BrandPerformance[]>('/analytics/brand-performance', { params })
+  return response.data
+}
+
+export async function getUserActivity(params: AnalyticsParams): Promise<UserActivity[]> {
+  const response = await api.get<UserActivity[]>('/analytics/user-activity', { params })
+  return response.data
+}
+
+export async function getLLMCosts(params: AnalyticsParams): Promise<LLMCostMetrics> {
+  const response = await api.get<LLMCostMetrics>('/analytics/llm-costs', { params })
+  return response.data
+}
+
+export async function getLLMCostsByBrand(params: AnalyticsParams): Promise<BrandLLMCost[]> {
+  const response = await api.get<BrandLLMCost[]>('/analytics/llm-costs-by-brand', { params })
   return response.data
 }
 

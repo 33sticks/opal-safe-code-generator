@@ -202,13 +202,26 @@ async def generate_code(
             test_description=test_description
         )
         
+        # Extract usage data and calculate cost
+        prompt_tokens = result.get("prompt_tokens", 0)
+        completion_tokens = result.get("completion_tokens", 0)
+        total_tokens = result.get("total_tokens", 0)
+        
+        # Calculate LLM cost
+        from app.core.constants import calculate_llm_cost
+        llm_cost_usd = calculate_llm_cost(prompt_tokens, completion_tokens) if prompt_tokens > 0 or completion_tokens > 0 else None
+        
         # Save to database
         generated_code_record = GeneratedCode(
             brand_id=brand.id,
             request_data=params,
             generated_code=result["generated_code"],
             confidence_score=result["confidence_score"],
-            validation_status=ValidationStatus.PENDING
+            validation_status=ValidationStatus.PENDING,
+            prompt_tokens=prompt_tokens if prompt_tokens > 0 else None,
+            completion_tokens=completion_tokens if completion_tokens > 0 else None,
+            total_tokens=total_tokens if total_tokens > 0 else None,
+            llm_cost_usd=llm_cost_usd
         )
         
         db.add(generated_code_record)

@@ -14,6 +14,7 @@ import { GeneratedCodePage } from '@/pages/GeneratedCode/GeneratedCodePage'
 import { Notifications } from '@/pages/Notifications'
 import { MyRequests } from '@/pages/MyRequests'
 import { UsersPage } from '@/pages/Users/UsersPage'
+import { AnalyticsPage } from '@/pages/Analytics/AnalyticsPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -110,6 +111,16 @@ function App() {
                 <ProtectedRoute requiredRole="admin">
                   <Layout>
                     <UsersPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Layout>
+                    <AnalyticsPage />
                   </Layout>
                 </ProtectedRoute>
               }

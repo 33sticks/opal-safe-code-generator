@@ -336,48 +336,29 @@ async def send_message(
                         logger.error(f"CodeGeneratorService returned unexpected type: {type(result)}")
                         result = {"generated_code": str(result), "confidence_score": 0.5}
                     
-                    # Extract and clean the generated code
-                    # Ensure we have just the code string, not JSON
+                    # Extract the generated code
+                    # CodeGeneratorService now returns raw JavaScript (preferred) or handles JSON parsing internally
                     code_string = result.get("generated_code", "")
                     
                     # Log the raw result for debugging
                     logger.debug(f"Code generator result type: {type(code_string)}, length: {len(str(code_string)) if code_string else 0}")
-                    
-                    # If code_string is actually a JSON string, parse it
-                    if isinstance(code_string, str):
-                        # Check if it's a JSON string (starts with {)
-                        code_string_stripped = code_string.strip()
-                        if code_string_stripped.startswith("{") and code_string_stripped.endswith("}"):
-                            try:
-                                parsed_json = json.loads(code_string)
-                                logger.info("Found JSON string in generated_code, parsing...")
-                                # Extract just the code if it's nested
-                                if "generated_code" in parsed_json:
-                                    code_string = parsed_json["generated_code"]
-                                    logger.debug("Extracted code from nested 'generated_code' key")
-                                elif isinstance(parsed_json, dict) and len(parsed_json) == 1:
-                                    # If it's a dict with one key, use that value
-                                    code_string = list(parsed_json.values())[0]
-                                    logger.debug("Extracted code from single-key dict")
-                                else:
-                                    # If it's a dict, try to find a string value that looks like code
-                                    for key, value in parsed_json.items():
-                                        if isinstance(value, str) and ("function" in value or "const" in value or "document." in value):
-                                            code_string = value
-                                            logger.debug(f"Extracted code from '{key}' key")
-                                            break
-                            except (json.JSONDecodeError, ValueError) as e:
-                                # Not valid JSON, use as-is
-                                logger.warning(f"Failed to parse JSON from code_string: {e}")
-                                pass
                     
                     # Ensure code_string is a string and not None
                     if not code_string:
                         logger.error("Generated code is empty after processing!")
                         code_string = ""
                     else:
-                        code_string = str(code_string)
+                        code_string = str(code_string).strip()
                         logger.debug(f"Final code_string length: {len(code_string)}, first 100 chars: {code_string[:100]}")
+                    
+                    # Extract usage data and calculate cost
+                    prompt_tokens = result.get("prompt_tokens", 0)
+                    completion_tokens = result.get("completion_tokens", 0)
+                    total_tokens = result.get("total_tokens", 0)
+                    
+                    # Calculate LLM cost
+                    from app.core.constants import calculate_llm_cost
+                    llm_cost_usd = calculate_llm_cost(prompt_tokens, completion_tokens) if prompt_tokens > 0 or completion_tokens > 0 else None
                     
                     # Save generated code
                     generated_code_record = GeneratedCode(
@@ -392,7 +373,11 @@ async def send_message(
                         },
                         generated_code=code_string,
                         confidence_score=result.get("confidence_score"),
-                        validation_status=ValidationStatus.PENDING
+                        validation_status=ValidationStatus.PENDING,
+                        prompt_tokens=prompt_tokens if prompt_tokens > 0 else None,
+                        completion_tokens=completion_tokens if completion_tokens > 0 else None,
+                        total_tokens=total_tokens if total_tokens > 0 else None,
+                        llm_cost_usd=llm_cost_usd
                     )
                     
                     db.add(generated_code_record)

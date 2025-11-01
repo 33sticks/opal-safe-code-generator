@@ -10,7 +10,8 @@ import {
   X,
   Bell,
   FolderOpen,
-  Users
+  Users,
+  BarChart3
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -23,6 +24,7 @@ const superAdminNavigation = [
   { name: 'Rules', href: '/rules', icon: Shield },
   { name: 'Generated Code', href: '/generated-code', icon: Code },
   { name: 'Users', href: '/users', icon: Users },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
   { name: 'Notifications', href: '/notifications', icon: Bell },
@@ -34,6 +36,7 @@ const brandAdminNavigation = [
   { name: 'Rules', href: '/rules', icon: Shield },
   { name: 'Generated Code', href: '/generated-code', icon: Code },
   { name: 'Users', href: '/users', icon: Users },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
   { name: 'Notifications', href: '/notifications', icon: Bell },

@@ -67,6 +67,11 @@ class CodeGeneratorService:
                 messages=[{"role": "user", "content": prompt}]
             )
             
+            # Extract usage data from Claude API response
+            prompt_tokens = getattr(response.usage, 'input_tokens', 0) if hasattr(response, 'usage') else 0
+            completion_tokens = getattr(response.usage, 'output_tokens', 0) if hasattr(response, 'usage') else 0
+            total_tokens = prompt_tokens + completion_tokens
+            
             # Parse response
             parsed_response = self._parse_claude_response(response)
             
@@ -98,7 +103,10 @@ class CodeGeneratorService:
                 "generated_code": generated_code,
                 "confidence_score": confidence_score,
                 "implementation_notes": implementation_notes,
-                "testing_checklist": testing_checklist
+                "testing_checklist": testing_checklist,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens
             }
             
         except APIError as e:
@@ -231,15 +239,28 @@ Placeholder Values to Use:
 - {{date}}: Use current date in format "YYYY-MM-DD"
 - {{features}}: Extract key features from the test description
 
-IMPORTANT: You MUST return your response in the following JSON format (no markdown code blocks, just raw JSON):
+CRITICAL OUTPUT FORMAT:
+You must return ONLY the raw JavaScript code.
+Do NOT wrap it in JSON with fields like "generated_code" or "implementation_notes".
+Do NOT include markdown code blocks (```javascript or ```).
+Do NOT include any explanatory text, JSON, or metadata.
 
+Your entire response should be executable JavaScript that starts with comments and ends with the closing brace.
+The code should be ready to copy/paste directly into Optimizely.
+
+Example of correct format:
+'use strict';
+// Test code starts here
+(function() {{
+  // code
+}})();
+
+Example of WRONG format (do not do this):
 {{
-  "generated_code": "// Complete JavaScript code with all placeholders replaced",
-  "implementation_notes": "- Bullet point 1\\n- Bullet point 2\\n- Bullet point 3",
-  "testing_checklist": "- QA item 1\\n- QA item 2\\n- QA item 3"
+  "generated_code": "...",
+  "notes": "..."
 }}
-
-Return only valid JSON. Do not include markdown code blocks, backticks, or any other formatting."""
+"""
         else:
             # Original prompt without global template
             prompt = f"""You are a JavaScript code generator for A/B testing. Generate safe, production-ready JavaScript code for the {brand_name} brand ({brand_domain}).
@@ -260,15 +281,28 @@ Requirements:
 4. Ensure the code is production-ready and follows JavaScript best practices
 5. Include comments explaining key logic
 
-IMPORTANT: You MUST return your response in the following JSON format (no markdown code blocks, just raw JSON):
+CRITICAL OUTPUT FORMAT:
+You must return ONLY the raw JavaScript code.
+Do NOT wrap it in JSON with fields like "generated_code" or "implementation_notes".
+Do NOT include markdown code blocks (```javascript or ```).
+Do NOT include any explanatory text, JSON, or metadata.
 
+Your entire response should be executable JavaScript that starts with comments and ends with the closing brace.
+The code should be ready to copy/paste directly into Optimizely.
+
+Example of correct format:
+'use strict';
+// Test code starts here
+(function() {{
+  // code
+}})();
+
+Example of WRONG format (do not do this):
 {{
-  "generated_code": "// JavaScript code here with comments",
-  "implementation_notes": "- Bullet point 1\\n- Bullet point 2\\n- Bullet point 3",
-  "testing_checklist": "- QA item 1\\n- QA item 2\\n- QA item 3"
+  "generated_code": "...",
+  "notes": "..."
 }}
-
-Return only valid JSON. Do not include markdown code blocks, backticks, or any other formatting."""
+"""
         
         return prompt
     
@@ -359,10 +393,10 @@ Return only valid JSON. Do not include markdown code blocks, backticks, or any o
     
     def _parse_claude_response(self, response: Any) -> Dict[str, Any]:
         """
-        Parse Claude API response, handling JSON and fallback cases.
+        Parse Claude API response, handling raw JavaScript (preferred) or JSON (fallback).
         
-        Extracts JSON from response, strips markdown code blocks, and handles
-        cases where Claude returns non-JSON text.
+        Claude should return raw JavaScript code, but we also handle JSON-wrapped responses
+        for backwards compatibility and robustness.
         """
         # Extract text from Claude response
         content = response.content
@@ -381,50 +415,86 @@ Return only valid JSON. Do not include markdown code blocks, backticks, or any o
         else:
             text = str(content)
         
-        # Strip markdown code block markers
+        original_text = text
         text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]  # Remove ```json
+        
+        # First, check if response is JSON-wrapped (fallback case)
+        # Look for JSON structure with "generated_code" field
+        if '"generated_code"' in text or "'generated_code'" in text or (text.startswith('{') and '"generated_code"' in text):
+            logger.info("Detected JSON-wrapped response, extracting code from JSON")
+            try:
+                # Strip markdown code block markers if present
+                if text.startswith("```json"):
+                    text = text[7:]
+                elif text.startswith("```"):
+                    text = text[3:]
+                if text.endswith("```"):
+                    text = text[:-3]
+                text = text.strip()
+                
+                parsed = json.loads(text)
+                if isinstance(parsed, dict) and "generated_code" in parsed:
+                    return {
+                        "generated_code": parsed.get("generated_code", ""),
+                        "implementation_notes": parsed.get("implementation_notes", "Generated by Claude"),
+                        "testing_checklist": parsed.get("testing_checklist", "Review code manually")
+                    }
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse JSON, attempting to extract code from JSON string")
+                # Try regex extraction as fallback
+                try:
+                    # Match "generated_code": "..." or 'generated_code': '...'
+                    match = re.search(
+                        r'["\']generated_code["\']\s*:\s*["\']((?:[^"\'\\]|\\.|\\n|\\t)*)["\']',
+                        original_text,
+                        re.DOTALL
+                    )
+                    if match:
+                        code = match.group(1)
+                        # Unescape JSON string
+                        code = code.replace('\\n', '\n')
+                        code = code.replace('\\t', '\t')
+                        code = code.replace('\\"', '"')
+                        code = code.replace("\\'", "'")
+                        code = code.replace('\\\\', '\\')
+                        logger.info("Extracted code from JSON wrapper using regex")
+                        return {
+                            "generated_code": code,
+                            "implementation_notes": "Generated by Claude",
+                            "testing_checklist": "Review code manually"
+                        }
+                except Exception as e:
+                    logger.warning(f"Failed to extract code from JSON: {e}")
+        
+        # Assume raw JavaScript (preferred case)
+        # Strip markdown code block markers if present
+        if text.startswith("```javascript"):
+            text = text[13:]  # Remove ```javascript
+        elif text.startswith("```js"):
+            text = text[5:]  # Remove ```js
         elif text.startswith("```"):
             text = text[3:]  # Remove ```
         if text.endswith("```"):
             text = text[:-3]  # Remove trailing ```
         text = text.strip()
         
-        # Try to parse JSON
-        try:
-            parsed = json.loads(text)
-            if isinstance(parsed, dict):
-                # Ensure all required keys are present
-                return {
-                    "generated_code": parsed.get("generated_code", ""),
-                    "implementation_notes": parsed.get("implementation_notes", "Generated by Claude"),
-                    "testing_checklist": parsed.get("testing_checklist", "Review code manually")
-                }
-        except json.JSONDecodeError:
-            logger.warning("Claude returned non-JSON response, attempting fallback parsing")
-            # Fallback: try to extract code from response
-            # Look for JavaScript code blocks
-            js_match = re.search(r'```(?:javascript|js)?\s*\n(.*?)```', text, re.DOTALL)
+        # If text is empty or doesn't look like code, try fallback extraction
+        if not text or (not any(keyword in text for keyword in ['function', 'const', 'let', 'var', 'document.', 'window.', '(', ')'])):
+            logger.warning("Response doesn't look like JavaScript, attempting fallback parsing")
+            # Try to extract code from markdown blocks
+            js_match = re.search(r'```(?:javascript|js)?\s*\n(.*?)```', original_text, re.DOTALL)
             if js_match:
-                code = js_match.group(1).strip()
+                text = js_match.group(1).strip()
             else:
-                # Try to find code-like content
-                lines = text.split('\n')
-                code_lines = []
-                in_code = False
-                for line in lines:
-                    if any(keyword in line for keyword in ['function', 'const', 'let', 'var', 'document.', 'window.']):
-                        in_code = True
-                    if in_code:
-                        code_lines.append(line)
-                code = '\n'.join(code_lines) if code_lines else text[:500]  # Limit fallback
-            
-            return {
-                "generated_code": code,
-                "implementation_notes": "Generated by Claude (non-JSON response parsed)",
-                "testing_checklist": "Review code manually - verify all functionality"
-            }
+                # Use original text as fallback
+                text = original_text.strip()
+        
+        # Return raw JavaScript code (preferred format)
+        return {
+            "generated_code": text,
+            "implementation_notes": "Generated by Claude",
+            "testing_checklist": "Review code manually - verify all functionality"
+        }
     
     def _validate_code(
         self,
