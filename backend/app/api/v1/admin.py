@@ -1,34 +1,40 @@
 """Temporary admin endpoints for database setup."""
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.api.deps import get_db
-from app.models import Brand, Template, DOMSelector, CodeRule
+from app.models import Brand, Template, DOMSelector, CodeRule, User
+from app.models.enums import UserRole, BrandStatus
 from datetime import datetime
 
 router = APIRouter()
 
 @router.post("/seed")
 async def seed_database(db: AsyncSession = Depends(get_db)):
-    """Seed the database with initial VANS and Timberland data."""
+    """Seed the database with initial VANS and Timberland data. Idempotent - creates missing data only."""
     
     try:
         # Check if brands already exist
-        from sqlalchemy import select
         result = await db.execute(select(Brand))
         existing_brands = result.scalars().all()
         
+        brands_seeded = False
         if existing_brands:
-            return {
-                "message": "Database already seeded",
-                "brands": [b.name for b in existing_brands]
-            }
+            brands_seeded = True
+            vans_brand = next((b for b in existing_brands if b.name == "VANS"), None)
+            timberland_brand = next((b for b in existing_brands if b.name == "Timberland"), None)
+        else:
+            brands_seeded = False
+            vans_brand = None
+            timberland_brand = None
         
-        # Create VANS brand with global template
-        vans = Brand(
-            name="VANS",
-            domain="vans.com",
-            status="active",
-            config={
+        # Create VANS brand if it doesn't exist
+        if not vans_brand:
+            vans = Brand(
+                name="VANS",
+                domain="vans.com",
+                status=BrandStatus.ACTIVE,
+                config={
                 "theme": "skate",
                 "region": "US",
                 "currency": "USD",
@@ -103,25 +109,36 @@ if (!utils) {
     });
 }"""
             }
-        )
-        db.add(vans)
-        await db.flush()
+            )
+            db.add(vans)
+            await db.flush()
+            vans_brand = vans
+        else:
+            vans = vans_brand
         
-        # Create Timberland brand
-        timberland = Brand(
-            name="Timberland",
-            domain="timberland.com",
-            status="active",
-            config={"theme": "outdoor", "region": "US", "currency": "USD"}
-        )
-        db.add(timberland)
-        await db.flush()
+        # Create Timberland brand if it doesn't exist
+        if not timberland_brand:
+            timberland = Brand(
+                name="Timberland",
+                domain="timberland.com",
+                status=BrandStatus.ACTIVE,
+                config={"theme": "outdoor", "region": "US", "currency": "USD"}
+            )
+            db.add(timberland)
+            await db.flush()
+            timberland_brand = timberland
+        else:
+            timberland = timberland_brand
         
-        # Create PDP template for VANS
-        pdp_template = Template(
-            brand_id=vans.id,
-            test_type="pdp",
-            template_code="""'use strict';
+        # Create PDP template for VANS if it doesn't exist
+        existing_template = await db.execute(
+            select(Template).where(Template.brand_id == vans.id, Template.test_type == "pdp")
+        )
+        if not existing_template.scalar_one_or_none():
+            pdp_template = Template(
+                brand_id=vans.id,
+                test_type="pdp",
+                template_code="""'use strict';
 
 const utils = window.optimizely.get("utils");
 
@@ -144,87 +161,108 @@ utils.waitForElement("button[data-test-id='vf-button']", 10000).then(function(ad
 }).catch(function(error) {
     log('ERROR', 'Add to Cart button not found', error);
 });""",
-            description="PDP Add to Cart button modification pattern",
-            version="1.0",
-            is_active=True
+                description="PDP Add to Cart button modification pattern",
+                version="1.0",
+                is_active=True
+            )
+            db.add(pdp_template)
+        
+        # Create selectors for VANS PDP if they don't exist
+        selector_data = [
+            {"selector": "button[data-test-id='vf-button']", "description": "Add to Cart button - main CTA on product page"},
+            {"selector": "span.center.text-center.i-flex", "description": "Button text span inside Add to Cart button"}
+        ]
+        
+        for sel_data in selector_data:
+            existing_sel = await db.execute(
+                select(DOMSelector).where(
+                    DOMSelector.brand_id == vans.id,
+                    DOMSelector.selector == sel_data["selector"]
+                )
+            )
+            if not existing_sel.scalar_one_or_none():
+                selector = DOMSelector(
+                    brand_id=vans.id,
+                    page_type="pdp",
+                    selector=sel_data["selector"],
+                    description=sel_data["description"],
+                    status="active"
+                )
+                db.add(selector)
+        
+        # Create code rules for VANS if they don't exist
+        rules_data = [
+            {"rule_type": "forbidden_pattern", "rule_content": "eval(", "priority": 10},
+            {"rule_type": "forbidden_pattern", "rule_content": ".innerHTML", "priority": 10},
+            {"rule_type": "forbidden_pattern", "rule_content": "document.write", "priority": 10},
+            {"rule_type": "required_pattern", "rule_content": "'use strict';", "priority": 5},
+            {"rule_type": "required_pattern", "rule_content": "try {", "priority": 5},
+            {"rule_type": "required_pattern", "rule_content": "log(", "priority": 3},
+            {"rule_type": "forbidden_pattern", "rule_content": "document.body.innerHTML", "priority": 10}
+        ]
+        
+        for rule_data in rules_data:
+            existing_rule = await db.execute(
+                select(CodeRule).where(
+                    CodeRule.brand_id == vans.id,
+                    CodeRule.rule_type == rule_data["rule_type"],
+                    CodeRule.rule_content == rule_data["rule_content"]
+                )
+            )
+            if not existing_rule.scalar_one_or_none():
+                rule = CodeRule(
+                    brand_id=vans.id,
+                    **rule_data
+                )
+                db.add(rule)
+        
+        # Always check and create users if they don't exist
+        admin_result = await db.execute(
+            select(User).where(User.email == "admin@opalsafecode.com")
         )
-        db.add(pdp_template)
+        admin_user = admin_result.scalar_one_or_none()
         
-        # Create selectors for VANS PDP
-        selectors = [
-            DOMSelector(
-                brand_id=vans.id,
-                page_type="pdp",
-                selector="button[data-test-id='vf-button']",
-                description="Add to Cart button - main CTA on product page",
-                status="active"
-            ),
-            DOMSelector(
-                brand_id=vans.id,
-                page_type="pdp",
-                selector="span.center.text-center.i-flex",
-                description="Button text span inside Add to Cart button",
-                status="active"
+        admin_created = False
+        if not admin_user:
+            admin_user = User(
+                email="admin@opalsafecode.com",
+                name="Admin User",
+                role=UserRole.ADMIN,
+                brand_id=None
             )
-        ]
+            admin_user.set_password("changeme123")
+            db.add(admin_user)
+            admin_created = True
         
-        for selector in selectors:
-            db.add(selector)
+        user_result = await db.execute(
+            select(User).where(User.email == "user@vans.com")
+        )
+        user_user = user_result.scalar_one_or_none()
         
-        # Create code rules for VANS
-        rules = [
-            CodeRule(
-                brand_id=vans.id,
-                rule_type="forbidden_pattern",
-                rule_content="eval(",
-                priority=10
-            ),
-            CodeRule(
-                brand_id=vans.id,
-                rule_type="forbidden_pattern",
-                rule_content=".innerHTML",
-                priority=10
-            ),
-            CodeRule(
-                brand_id=vans.id,
-                rule_type="forbidden_pattern",
-                rule_content="document.write",
-                priority=10
-            ),
-            CodeRule(
-                brand_id=vans.id,
-                rule_type="required_pattern",
-                rule_content="'use strict';",
-                priority=5
-            ),
-            CodeRule(
-                brand_id=vans.id,
-                rule_type="required_pattern",
-                rule_content="try {",
-                priority=5
-            ),
-            CodeRule(
-                brand_id=vans.id,
-                rule_type="required_pattern",
-                rule_content="log(",
-                priority=3
-            ),
-            CodeRule(
-                brand_id=vans.id,
-                rule_type="forbidden_pattern",
-                rule_content="document.body.innerHTML",
-                priority=10
+        user_created = False
+        if not user_user:
+            user_user = User(
+                email="user@vans.com",
+                name="VANS User",
+                role=UserRole.USER,
+                brand_id=vans.id
             )
-        ]
-        
-        for rule in rules:
-            db.add(rule)
+            user_user.set_password("changeme123")
+            db.add(user_user)
+            user_created = True
         
         await db.commit()
         
+        message = "Database seeded successfully" if not brands_seeded else "Database check completed - missing data created"
+        
         return {
-            "message": "Database seeded successfully",
+            "message": message,
             "brands": ["VANS", "Timberland"],
+            "brands_already_existed": brands_seeded,
+            "users_created": {
+                "admin": admin_created,
+                "user": user_created
+            },
             "vans_data": {
                 "templates": 1,
                 "selectors": 2,
