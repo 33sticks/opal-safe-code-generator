@@ -3,7 +3,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, Info } from 'lucide-react'
+import { ConfidenceScoreBreakdown } from './ConfidenceScoreBreakdown'
 import type { GeneratedCode } from '@/types/chat'
 
 interface CodeBlockProps {
@@ -12,6 +13,7 @@ interface CodeBlockProps {
 
 export function CodeBlock({ code }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
+  const [showBreakdown, setShowBreakdown] = useState(false)
 
   // Process the code string to handle escaped newlines and JSON encoding
   const processedCode = useMemo(() => {
@@ -64,9 +66,19 @@ export function CodeBlock({ code }: CodeBlockProps) {
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-semibold">Generated Code</h4>
             {code.confidence_score !== null && code.confidence_score !== undefined && (
-              <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                Confidence: {Math.round(code.confidence_score * 100)}%
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  Confidence: {Math.round(code.confidence_score * 100)}%
+                </span>
+                <button
+                  onClick={() => setShowBreakdown(true)}
+                  className="p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                  aria-label="View confidence score breakdown"
+                  title="Why this score?"
+                >
+                  <Info className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                </button>
+              </div>
             )}
           </div>
           <Button
@@ -105,6 +117,13 @@ export function CodeBlock({ code }: CodeBlockProps) {
           </SyntaxHighlighter>
         </div>
       </CardContent>
+      
+      <ConfidenceScoreBreakdown
+        open={showBreakdown}
+        onOpenChange={setShowBreakdown}
+        breakdown={code.confidence_breakdown ?? null}
+        score={code.confidence_score ?? null}
+      />
     </Card>
   )
 }

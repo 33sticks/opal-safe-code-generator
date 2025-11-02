@@ -1,8 +1,21 @@
 """Generated Code Pydantic schemas."""
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from pydantic import BaseModel, Field
 from app.models.enums import ValidationStatus, DeploymentStatus, CodeStatus
+
+
+class ConfidenceBreakdown(BaseModel):
+    """Schema for confidence score breakdown."""
+    overall_score: float = Field(..., ge=0.0, le=1.0, description="Overall confidence score")
+    template_score: float = Field(..., ge=0.0, le=0.3, description="Template adherence score (0-0.3)")
+    rule_score: float = Field(..., ge=0.0, le=0.4, description="Rule compliance score (0-0.4)")
+    selector_score: float = Field(..., ge=0.0, le=0.3, description="Selector validation score (0-0.3)")
+    rule_violations: List[str] = Field(default_factory=list, description="List of rule violations found")
+    invalid_selectors: List[str] = Field(default_factory=list, description="List of invalid selectors found")
+    is_valid: bool = Field(..., description="Whether code passed validation")
+    validation_status: str = Field(..., description="Validation status: passed, failed, or warning")
+    recommendation: str = Field(..., description="Recommendation: safe_to_use, review_carefully, or needs_fixes")
 
 
 class GeneratedCodeBase(BaseModel):
@@ -46,6 +59,7 @@ class GeneratedCodeResponse(GeneratedCodeBase):
     approved_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None
     created_at: datetime
+    confidence_breakdown: Optional[ConfidenceBreakdown] = Field(None, description="Confidence score breakdown if available")
     
     class Config:
         from_attributes = True

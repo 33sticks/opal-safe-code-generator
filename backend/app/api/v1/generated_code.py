@@ -18,7 +18,8 @@ from app.schemas.generated_code import (
     GeneratedCodeEnhancedResponse,
     CodeReviewRequest,
     CodeReviewResponse,
-    ConversationForCodeResponse
+    ConversationForCodeResponse,
+    ConfidenceBreakdown
 )
 from app.core.exceptions import NotFoundException
 from app.core.auth import require_role, get_user_brand_access
@@ -95,6 +96,17 @@ async def list_generated_code(
             if first_msg:
                 conversation_preview = first_msg[:150]  # Truncate to 150 chars
         
+        # Extract confidence breakdown from error_logs if available
+        confidence_breakdown = None
+        if code.error_logs and isinstance(code.error_logs, dict):
+            breakdown_data = code.error_logs.get("confidence_breakdown")
+            if breakdown_data:
+                try:
+                    confidence_breakdown = ConfidenceBreakdown(**breakdown_data)
+                except Exception:
+                    # If breakdown data is malformed, continue without it
+                    confidence_breakdown = None
+        
         # Build enhanced response
         enhanced_code = GeneratedCodeEnhancedResponse(
             id=code.id,
@@ -115,6 +127,7 @@ async def list_generated_code(
             approved_at=code.approved_at,
             rejection_reason=code.rejection_reason,
             created_at=code.created_at,
+            confidence_breakdown=confidence_breakdown,
             brand_name=code.brand.name if code.brand else None,
             user_email=code.user.email if code.user else None,
             conversation_preview=conversation_preview,
@@ -138,7 +151,39 @@ async def get_generated_code(
     if not generated_code:
         raise NotFoundException("GeneratedCode", code_id)
     
-    return generated_code
+    # Extract confidence breakdown from error_logs if available
+    confidence_breakdown = None
+    if generated_code.error_logs and isinstance(generated_code.error_logs, dict):
+        breakdown_data = generated_code.error_logs.get("confidence_breakdown")
+        if breakdown_data:
+            try:
+                confidence_breakdown = ConfidenceBreakdown(**breakdown_data)
+            except Exception:
+                # If breakdown data is malformed, continue without it
+                confidence_breakdown = None
+    
+    # Build response with breakdown
+    return GeneratedCodeResponse(
+        id=generated_code.id,
+        brand_id=generated_code.brand_id,
+        conversation_id=str(generated_code.conversation_id) if generated_code.conversation_id else None,
+        user_id=generated_code.user_id,
+        request_data=generated_code.request_data,
+        generated_code=generated_code.generated_code,
+        confidence_score=generated_code.confidence_score,
+        validation_status=generated_code.validation_status,
+        user_feedback=generated_code.user_feedback,
+        deployment_status=generated_code.deployment_status,
+        error_logs=generated_code.error_logs,
+        status=generated_code.status,
+        reviewer_id=generated_code.reviewer_id,
+        reviewed_at=generated_code.reviewed_at,
+        reviewer_notes=generated_code.reviewer_notes,
+        approved_at=generated_code.approved_at,
+        rejection_reason=generated_code.rejection_reason,
+        created_at=generated_code.created_at,
+        confidence_breakdown=confidence_breakdown
+    )
 
 
 @router.post("/{code_id}/review", response_model=CodeReviewResponse, status_code=status.HTTP_200_OK)

@@ -211,6 +211,14 @@ async def generate_code(
         from app.core.constants import calculate_llm_cost
         llm_cost_usd = calculate_llm_cost(prompt_tokens, completion_tokens) if prompt_tokens > 0 or completion_tokens > 0 else None
         
+        # Extract confidence breakdown if available
+        confidence_breakdown = result.get("confidence_breakdown")
+        error_logs = None
+        if confidence_breakdown:
+            error_logs = {
+                "confidence_breakdown": confidence_breakdown
+            }
+        
         # Save to database
         generated_code_record = GeneratedCode(
             brand_id=brand.id,
@@ -218,6 +226,7 @@ async def generate_code(
             generated_code=result["generated_code"],
             confidence_score=result["confidence_score"],
             validation_status=ValidationStatus.PENDING,
+            error_logs=error_logs,
             prompt_tokens=prompt_tokens if prompt_tokens > 0 else None,
             completion_tokens=completion_tokens if completion_tokens > 0 else None,
             total_tokens=total_tokens if total_tokens > 0 else None,

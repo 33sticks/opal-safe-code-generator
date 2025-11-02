@@ -360,6 +360,14 @@ async def send_message(
                     from app.core.constants import calculate_llm_cost
                     llm_cost_usd = calculate_llm_cost(prompt_tokens, completion_tokens) if prompt_tokens > 0 or completion_tokens > 0 else None
                     
+                    # Extract confidence breakdown if available
+                    confidence_breakdown = result.get("confidence_breakdown")
+                    error_logs = None
+                    if confidence_breakdown:
+                        error_logs = {
+                            "confidence_breakdown": confidence_breakdown
+                        }
+                    
                     # Save generated code
                     generated_code_record = GeneratedCode(
                         brand_id=brand.id,
@@ -374,6 +382,7 @@ async def send_message(
                         generated_code=code_string,
                         confidence_score=result.get("confidence_score"),
                         validation_status=ValidationStatus.PENDING,
+                        error_logs=error_logs,
                         prompt_tokens=prompt_tokens if prompt_tokens > 0 else None,
                         completion_tokens=completion_tokens if completion_tokens > 0 else None,
                         total_tokens=total_tokens if total_tokens > 0 else None,
@@ -414,6 +423,18 @@ async def send_message(
                     # Update conversation status
                     conversation.status = ConversationStatus.COMPLETED
                     
+                    # Extract confidence breakdown from error_logs if available
+                    confidence_breakdown = None
+                    if generated_code_record.error_logs and isinstance(generated_code_record.error_logs, dict):
+                        breakdown_data = generated_code_record.error_logs.get("confidence_breakdown")
+                        if breakdown_data:
+                            from app.schemas.generated_code import ConfidenceBreakdown
+                            try:
+                                confidence_breakdown = ConfidenceBreakdown(**breakdown_data)
+                            except Exception:
+                                # If breakdown data is malformed, continue without it
+                                confidence_breakdown = None
+                    
                     # Create response
                     generated_code_response = GeneratedCodeResponse(
                         id=generated_code_record.id,
@@ -425,7 +446,8 @@ async def send_message(
                         created_at=generated_code_record.created_at,
                         request_data=generated_code_record.request_data,
                         user_feedback=generated_code_record.user_feedback,
-                        error_logs=generated_code_record.error_logs
+                        error_logs=generated_code_record.error_logs,
+                        confidence_breakdown=confidence_breakdown
                     )
                     confidence_score = result["confidence_score"]
                     response_status = "code_generated"

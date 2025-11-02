@@ -182,6 +182,19 @@ export interface CodeRuleUpdate {
   priority?: number
 }
 
+// Confidence Breakdown types
+export interface ConfidenceBreakdown {
+  overall_score: number
+  template_score: number
+  rule_score: number
+  selector_score: number
+  rule_violations: string[]
+  invalid_selectors: string[]
+  is_valid: boolean
+  validation_status: 'passed' | 'failed' | 'warning'
+  recommendation: 'safe_to_use' | 'review_carefully' | 'needs_fixes'
+}
+
 // Generated Code types
 export interface GeneratedCode {
   id: number
@@ -207,6 +220,7 @@ export interface GeneratedCode {
   user_email?: string
   conversation_preview?: string
   reviewer_email?: string
+  confidence_breakdown?: ConfidenceBreakdown
 }
 
 export interface GeneratedCodeCreate {

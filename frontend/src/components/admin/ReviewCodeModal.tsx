@@ -60,6 +60,7 @@ export function ReviewCodeModal({
         request_data: code.request_data,
         user_feedback: code.user_feedback,
         error_logs: code.error_logs,
+        confidence_breakdown: code.confidence_breakdown ?? null,
       }
     : null
 

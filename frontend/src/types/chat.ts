@@ -74,6 +74,19 @@ export interface ConversationForCodeResponse {
   } | null
 }
 
+// Confidence Breakdown type (duplicated to avoid circular dependency)
+export interface ConfidenceBreakdown {
+  overall_score: number
+  template_score: number
+  rule_score: number
+  selector_score: number
+  rule_violations: string[]
+  invalid_selectors: string[]
+  is_valid: boolean
+  validation_status: 'passed' | 'failed' | 'warning'
+  recommendation: 'safe_to_use' | 'review_carefully' | 'needs_fixes'
+}
+
 // GeneratedCode type (duplicated to avoid circular dependency)
 export interface GeneratedCode {
   id: number
@@ -86,5 +99,6 @@ export interface GeneratedCode {
   request_data?: Record<string, any> | null
   user_feedback?: string | null
   error_logs?: Record<string, any> | null
+  confidence_breakdown?: ConfidenceBreakdown | null
 }
 

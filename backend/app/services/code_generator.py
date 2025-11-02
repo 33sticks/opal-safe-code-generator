@@ -94,14 +94,17 @@ class CodeGeneratorService:
                 generated_code, rules, selectors
             )
             
-            # Calculate confidence score
-            confidence_score = self._calculate_confidence(
+            # Calculate confidence score and breakdown
+            confidence_result = self._calculate_confidence(
                 generated_code, templates, validation_results
             )
+            confidence_score = confidence_result["confidence_score"]
+            confidence_breakdown = confidence_result["confidence_breakdown"]
             
             return {
                 "generated_code": generated_code,
                 "confidence_score": confidence_score,
+                "confidence_breakdown": confidence_breakdown,
                 "implementation_notes": implementation_notes,
                 "testing_checklist": testing_checklist,
                 "prompt_tokens": prompt_tokens,
@@ -564,19 +567,68 @@ Example of WRONG format (do not do this):
             "is_valid": len(rule_violations) == 0 and len(invalid_selectors) == 0
         }
     
+    def _calculate_recommendation(
+        self,
+        score: float,
+        is_valid: bool,
+        rule_violations: List[str],
+        invalid_selectors: List[str]
+    ) -> str:
+        """
+        Calculate recommendation based on confidence score and validation results.
+        
+        Returns:
+            "safe_to_use": score >= 0.8 AND is_valid AND no violations
+            "review_carefully": score >= 0.6 OR has warnings
+            "needs_fixes": score < 0.6 OR has violations OR invalid selectors
+        """
+        has_violations = len(rule_violations) > 0 or len(invalid_selectors) > 0
+        
+        if score >= 0.8 and is_valid and not has_violations:
+            return "safe_to_use"
+        elif score >= 0.6:
+            return "review_carefully"
+        else:
+            return "needs_fixes"
+    
+    def _get_validation_status(
+        self,
+        is_valid: bool,
+        rule_violations: List[str]
+    ) -> str:
+        """
+        Determine validation status based on validation results.
+        
+        Returns:
+            "passed": is_valid == True AND no violations
+            "failed": is_valid == False OR has violations
+            "warning": is_valid == True BUT has issues
+        """
+        has_violations = len(rule_violations) > 0
+        
+        if is_valid and not has_violations:
+            return "passed"
+        elif not is_valid or has_violations:
+            return "failed"
+        else:
+            return "warning"
+    
     def _calculate_confidence(
         self,
         code: str,
         templates: List[Dict[str, Any]],
         validation_results: Dict[str, Any]
-    ) -> float:
+    ) -> Dict[str, Any]:
         """
-        Calculate confidence score for generated code.
+        Calculate confidence score and breakdown for generated code.
         
         Scoring:
         - Template adherence: 30%
         - Rule compliance: 40%
         - Selector validation: 30%
+        
+        Returns:
+            Dict with "confidence_score" (float) and "confidence_breakdown" (dict)
         """
         template_score = 0.0
         rule_score = 0.0
@@ -627,5 +679,33 @@ Example of WRONG format (do not do this):
         total_score = template_score + rule_score + selector_score
         
         # Ensure score is between 0 and 1
-        return min(1.0, max(0.0, total_score))
+        confidence_score = min(1.0, max(0.0, total_score))
+        
+        # Get validation status and recommendation
+        rule_violations = validation_results.get("rule_violations", [])
+        invalid_selectors_list = validation_results.get("invalid_selectors", [])
+        is_valid = validation_results.get("is_valid", False)
+        
+        validation_status = self._get_validation_status(is_valid, rule_violations)
+        recommendation = self._calculate_recommendation(
+            confidence_score, is_valid, rule_violations, invalid_selectors_list
+        )
+        
+        # Build breakdown dict
+        breakdown = {
+            "overall_score": confidence_score,
+            "template_score": template_score,
+            "rule_score": rule_score,
+            "selector_score": selector_score,
+            "rule_violations": rule_violations,
+            "invalid_selectors": invalid_selectors_list,
+            "is_valid": is_valid,
+            "validation_status": validation_status,
+            "recommendation": recommendation
+        }
+        
+        return {
+            "confidence_score": confidence_score,
+            "confidence_breakdown": breakdown
+        }
 
