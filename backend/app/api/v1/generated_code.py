@@ -107,6 +107,14 @@ async def list_generated_code(
                     # If breakdown data is malformed, continue without it
                     confidence_breakdown = None
         
+        # Extract selector metadata from request_data
+        selector_metadata = None
+        selector_source_from_metadata = None
+        if code.request_data and isinstance(code.request_data, dict):
+            selector_metadata = code.request_data.get("selector_metadata")
+            if selector_metadata:
+                selector_source_from_metadata = selector_metadata.get("selector_source")
+        
         # Build enhanced response
         enhanced_code = GeneratedCodeEnhancedResponse(
             id=code.id,
@@ -128,6 +136,9 @@ async def list_generated_code(
             rejection_reason=code.rejection_reason,
             created_at=code.created_at,
             confidence_breakdown=confidence_breakdown,
+            requires_review=code.requires_review,
+            selector_source=selector_source_from_metadata,
+            selector_metadata=selector_metadata,
             brand_name=code.brand.name if code.brand else None,
             user_email=code.user.email if code.user else None,
             conversation_preview=conversation_preview,
@@ -162,6 +173,14 @@ async def get_generated_code(
                 # If breakdown data is malformed, continue without it
                 confidence_breakdown = None
     
+    # Extract selector metadata from request_data
+    selector_metadata = None
+    selector_source_from_metadata = None
+    if generated_code.request_data and isinstance(generated_code.request_data, dict):
+        selector_metadata = generated_code.request_data.get("selector_metadata")
+        if selector_metadata:
+            selector_source_from_metadata = selector_metadata.get("selector_source")
+    
     # Build response with breakdown
     return GeneratedCodeResponse(
         id=generated_code.id,
@@ -182,7 +201,10 @@ async def get_generated_code(
         approved_at=generated_code.approved_at,
         rejection_reason=generated_code.rejection_reason,
         created_at=generated_code.created_at,
-        confidence_breakdown=confidence_breakdown
+        confidence_breakdown=confidence_breakdown,
+        requires_review=generated_code.requires_review,
+        selector_source=selector_source_from_metadata,
+        selector_metadata=selector_metadata
     )
 
 

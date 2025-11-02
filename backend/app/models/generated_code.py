@@ -1,6 +1,6 @@
 """Generated Code model."""
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Text, Float, JSON, DateTime, ForeignKey, Enum as SQLEnum, Numeric
+from sqlalchemy import Column, Integer, String, Text, Float, JSON, DateTime, ForeignKey, Enum as SQLEnum, Numeric, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -39,6 +39,9 @@ class GeneratedCode(Base):
     completion_tokens = Column(Integer, nullable=True)
     total_tokens = Column(Integer, nullable=True)
     llm_cost_usd = Column(Numeric(precision=10, scale=4), nullable=True)
+    
+    # Selector review flag
+    requires_review = Column(Boolean, nullable=False, default=False, index=True)
     
     # Relationships
     brand = relationship("Brand", back_populates="generated_code")

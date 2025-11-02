@@ -60,6 +60,9 @@ class GeneratedCodeResponse(GeneratedCodeBase):
     rejection_reason: Optional[str] = None
     created_at: datetime
     confidence_breakdown: Optional[ConfidenceBreakdown] = Field(None, description="Confidence score breakdown if available")
+    requires_review: Optional[bool] = Field(None, description="Whether this code requires admin review due to user-provided selector")
+    selector_source: Optional[str] = Field(None, description="Source of selector: 'database' or 'user_provided'")
+    selector_metadata: Optional[Dict[str, Any]] = Field(None, description="Detailed selector metadata from request_data")
     
     class Config:
         from_attributes = True

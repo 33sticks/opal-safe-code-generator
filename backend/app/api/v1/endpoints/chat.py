@@ -4,6 +4,7 @@ import logging
 import asyncio
 from typing import Optional, List
 from uuid import UUID
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -32,6 +33,13 @@ from app.core.auth import get_current_user_dependency
 from app.core.prompts.chat_prompt import build_chat_prompt, build_conversation_messages
 from app.services.code_generator import CodeGeneratorService
 from app.services.notification_service import NotificationService
+from app.services.selector_validator import (
+    validate_element_selector,
+    extract_user_provided_selector,
+    validate_user_provided_selector,
+    extract_element_description_from_message,
+    try_both_selector_prefixes
+)
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -231,6 +239,44 @@ async def send_message(
                 test_type_str = extracted_params.get("test_type", "").lower()
                 page_type_str = extracted_params.get("page_type", "").lower()
                 
+                # Extract element_description from Claude's response or parse from user message
+                element_description = extracted_params.get("element_description", "").strip()
+                
+                # Fallback: Try to extract from user message if Claude didn't extract it
+                if not element_description:
+                    # Get recent user messages from conversation
+                    recent_user_messages = [
+                        msg.content for msg in messages[-3:]  # Check last 3 messages
+                        if msg.role == "user"
+                    ]
+                    for msg in recent_user_messages:
+                        extracted = extract_element_description_from_message(msg)
+                        if extracted:
+                            element_description = extracted
+                            logger.info(f"Extracted element description from user message: {element_description}")
+                            break
+                
+                # Check for user-provided CSS selector in the message
+                user_provided_selector = None
+                if not element_description:
+                    # Get conversation context for better selector extraction
+                    conversation_context = [
+                        msg.content for msg in messages[-5:]  # Last 5 messages for context
+                        if msg.role == "user"
+                    ]
+                    
+                    # Check if user provided selector directly
+                    recent_user_msg = request.message
+                    user_provided_selector = extract_user_provided_selector(
+                        recent_user_msg, 
+                        conversation_context=conversation_context
+                    )
+                    
+                    # If extracted selector is a bare name (no prefix), try both # and . prefixes
+                    if user_provided_selector and not user_provided_selector.startswith(('.', '#', '[')):
+                        # It's a bare name, we'll try both prefixes during validation
+                        logger.info(f"Extracted bare selector name: {user_provided_selector}, will try both prefixes")
+                
                 # Validate test_type
                 try:
                     test_type_enum = TestType(test_type_str)
@@ -239,6 +285,105 @@ async def send_message(
                     test_type_enum = None
                 
                 if test_type_enum:
+                    # Convert page_type string to enum
+                    try:
+                        page_type_enum = PageType(page_type_str)
+                    except ValueError:
+                        page_type_enum = None
+                        logger.warning(f"Invalid page_type: {page_type_str}")
+                    
+                    # Validate element selector if we have element_description and page_type
+                    selector_validation_passed = True
+                    selector_to_use = None
+                    selector_source = None
+                    requires_admin_review = False
+                    
+                    # Use new CSS selector validation flow (checks CSS first, then fuzzy matching)
+                    if element_description and page_type_enum:
+                        try:
+                            # Validate element description against database selectors
+                            # Pass user message for CSS selector extraction
+                            validation_result = await validate_element_selector(
+                                db=db,
+                                element_description=element_description,
+                                page_type=page_type_enum,
+                                brand_id=brand.id,
+                                user_message=request.message
+                            )
+                            
+                            if validation_result["status"] == "valid_but_not_in_db":
+                                # User provided valid CSS selector not in database
+                                # Inform user and proceed with flag
+                                selector_to_use = validation_result["selector"]
+                                selector_source = "user_provided"
+                                requires_admin_review = True
+                                
+                                # Update assistant message to inform user
+                                info_message = validation_result.get("message", f"Using selector '{selector_to_use}' (not in database, will be flagged for admin review)")
+                                assistant_message.content = assistant_message_text + "\n\n" + info_message if assistant_message_text else info_message
+                                logger.info(f"User-provided selector not in DB, flagging for review: {selector_to_use}")
+                                
+                            elif validation_result["status"] == "found_in_db":
+                                # Selector exists in database
+                                selector_to_use = validation_result["selector"]
+                                selector_source = "database"
+                                requires_admin_review = False
+                                logger.info(f"Selector found in database: {selector_to_use}")
+                                
+                            elif validation_result["status"] == "multiple_matches":
+                                # Fuzzy matching found multiple - ask user to choose
+                                selector_validation_passed = False
+                                assistant_message_text = validation_result["message"]
+                                ready_to_generate = False
+                                assistant_message.content = assistant_message_text
+                                
+                            elif validation_result["status"] == "not_found":
+                                # No valid selector and no fuzzy matches
+                                selector_validation_passed = False
+                                assistant_message_text = validation_result["message"]
+                                ready_to_generate = False
+                                assistant_message.content = assistant_message_text
+                                
+                        except Exception as e:
+                            # Validation error occurred - log and send user-friendly error message
+                            logger.error(f"Validation error: {str(e)}", exc_info=True)
+                            
+                            # Create error message for user
+                            error_message_text = "I encountered an error while validating the selector. Please try again or contact support if the issue persists."
+                            
+                            # Update assistant message with error
+                            assistant_message.content = error_message_text
+                            assistant_message_text = error_message_text
+                            ready_to_generate = False
+                            selector_validation_passed = False
+                            
+                            # Save the error message
+                            await db.commit()
+                            await db.refresh(conversation)
+                            
+                            # Return error response
+                            return ChatMessageResponse(
+                                conversation_id=conversation.id,
+                                message=error_message_text,
+                                generated_code=None,
+                                confidence_score=None,
+                                status="gathering_info"
+                            )
+                    
+                    # Only proceed with code generation if selector validation passed
+                    if not selector_validation_passed:
+                        # Skip code generation, but save the assistant message with validation error
+                        await db.commit()
+                        await db.refresh(conversation)
+                        
+                        return ChatMessageResponse(
+                            conversation_id=conversation.id,
+                            message=assistant_message_text,
+                            generated_code=None,
+                            confidence_score=None,
+                            status="gathering_info"
+                        )
+                    
                     # Query templates
                     templates_result = await db.execute(
                         select(Template).where(
@@ -248,12 +393,6 @@ async def send_message(
                         )
                     )
                     templates = templates_result.scalars().all()
-                    
-                    # Query selectors
-                    try:
-                        page_type_enum = PageType(page_type_str)
-                    except ValueError:
-                        page_type_enum = None
                     
                     selectors = []
                     if page_type_enum:
@@ -368,17 +507,29 @@ async def send_message(
                             "confidence_breakdown": confidence_breakdown
                         }
                     
+                    # Build request_data with selector metadata
+                    request_data_dict = {
+                        "extracted_params": extracted_params,
+                        "conversation_id": str(conversation.id),
+                        "implementation_notes": result.get("implementation_notes"),
+                        "testing_checklist": result.get("testing_checklist")
+                    }
+                    
+                    # Add selector metadata if selector was determined
+                    if selector_to_use:
+                        request_data_dict["selector_metadata"] = {
+                            "selector_used": selector_to_use,
+                            "selector_source": selector_source,
+                            "requires_review": requires_admin_review,
+                            "selector_validated": selector_source == "database"
+                        }
+                    
                     # Save generated code
                     generated_code_record = GeneratedCode(
                         brand_id=brand.id,
                         conversation_id=conversation.id,
                         user_id=current_user.id,
-                        request_data={
-                            "extracted_params": extracted_params,
-                            "conversation_id": str(conversation.id),
-                            "implementation_notes": result.get("implementation_notes"),
-                            "testing_checklist": result.get("testing_checklist")
-                        },
+                        request_data=request_data_dict,
                         generated_code=code_string,
                         confidence_score=result.get("confidence_score"),
                         validation_status=ValidationStatus.PENDING,
@@ -386,7 +537,8 @@ async def send_message(
                         prompt_tokens=prompt_tokens if prompt_tokens > 0 else None,
                         completion_tokens=completion_tokens if completion_tokens > 0 else None,
                         total_tokens=total_tokens if total_tokens > 0 else None,
-                        llm_cost_usd=llm_cost_usd
+                        llm_cost_usd=llm_cost_usd,
+                        requires_review=requires_admin_review  # Store in top-level column
                     )
                     
                     db.add(generated_code_record)
@@ -435,6 +587,14 @@ async def send_message(
                                 # If breakdown data is malformed, continue without it
                                 confidence_breakdown = None
                     
+                    # Extract selector metadata from request_data
+                    selector_metadata = None
+                    selector_source_from_metadata = None
+                    if generated_code_record.request_data and isinstance(generated_code_record.request_data, dict):
+                        selector_metadata = generated_code_record.request_data.get("selector_metadata")
+                        if selector_metadata:
+                            selector_source_from_metadata = selector_metadata.get("selector_source")
+                    
                     # Create response
                     generated_code_response = GeneratedCodeResponse(
                         id=generated_code_record.id,
@@ -447,7 +607,10 @@ async def send_message(
                         request_data=generated_code_record.request_data,
                         user_feedback=generated_code_record.user_feedback,
                         error_logs=generated_code_record.error_logs,
-                        confidence_breakdown=confidence_breakdown
+                        confidence_breakdown=confidence_breakdown,
+                        requires_review=generated_code_record.requires_review,
+                        selector_source=selector_source_from_metadata,
+                        selector_metadata=selector_metadata
                     )
                     confidence_score = result["confidence_score"]
                     response_status = "code_generated"
