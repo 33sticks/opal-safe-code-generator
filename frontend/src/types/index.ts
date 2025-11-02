@@ -106,6 +106,7 @@ export interface Template {
   is_active: boolean
   created_at: string
   updated_at: string
+  brand_name?: string
 }
 
 export interface TemplateCreate {
@@ -136,6 +137,7 @@ export interface DOMSelector {
   status: SelectorStatus
   created_at: string
   updated_at: string
+  brand_name?: string
 }
 
 export interface DOMSelectorCreate {
@@ -163,6 +165,7 @@ export interface CodeRule {
   priority: number
   created_at: string
   updated_at: string
+  brand_name?: string
 }
 
 export interface CodeRuleCreate {

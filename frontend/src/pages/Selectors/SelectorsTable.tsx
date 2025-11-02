@@ -72,7 +72,7 @@ export function SelectorsTable({ onEdit }: SelectorsTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Brand ID</TableHead>
+              <TableHead>Brand</TableHead>
               <TableHead>Page Type</TableHead>
               <TableHead>Selector</TableHead>
               <TableHead>Status</TableHead>
@@ -84,7 +84,7 @@ export function SelectorsTable({ onEdit }: SelectorsTableProps) {
             {selectors.map((selector: DOMSelector) => (
               <TableRow key={selector.id}>
                 <TableCell>{selector.id}</TableCell>
-                <TableCell>{selector.brand_id}</TableCell>
+                <TableCell>{selector.brand_name || `Brand ${selector.brand_id}`}</TableCell>
                 <TableCell className="font-medium">{selector.page_type}</TableCell>
                 <TableCell className="max-w-xs truncate font-mono text-xs">
                   {selector.selector}

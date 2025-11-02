@@ -60,3 +60,4 @@ async def get_unread_count(
     count = await NotificationService.get_unread_count(db=db, user_id=current_user.id)
     return UnreadCountResponse(count=count)
 
+

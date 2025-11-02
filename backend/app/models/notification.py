@@ -25,3 +25,4 @@ class Notification(Base):
     user = relationship("User", backref="notifications")
     generated_code = relationship("GeneratedCode", backref="notifications")
 
+

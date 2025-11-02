@@ -34,3 +34,12 @@ class CodeRuleResponse(CodeRuleBase):
     
     class Config:
         from_attributes = True
+
+
+class CodeRuleEnhancedResponse(CodeRuleResponse):
+    """Enhanced response with brand name."""
+    brand_name: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+

@@ -38,3 +38,12 @@ class TemplateResponse(TemplateBase):
     
     class Config:
         from_attributes = True
+
+
+class TemplateEnhancedResponse(TemplateResponse):
+    """Enhanced response with brand name."""
+    brand_name: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+

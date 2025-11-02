@@ -3,19 +3,20 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from app.api.deps import get_db
 from app.models.code_rule import CodeRule
 from app.models.brand import Brand
 from app.models.user import User
-from app.schemas.code_rule import CodeRuleCreate, CodeRuleUpdate, CodeRuleResponse
+from app.schemas.code_rule import CodeRuleCreate, CodeRuleUpdate, CodeRuleResponse, CodeRuleEnhancedResponse
 from app.core.exceptions import NotFoundException
 from app.core.auth import require_role, get_user_brand_access
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[CodeRuleResponse], status_code=status.HTTP_200_OK)
+@router.get("/", response_model=List[CodeRuleEnhancedResponse], status_code=status.HTTP_200_OK)
 async def list_rules(
     skip: int = 0,
     limit: int = 100,
@@ -24,7 +25,7 @@ async def list_rules(
     current_user: User = Depends(require_role("admin"))
 ):
     """List code rules with optional brand filter. Filtered by user's brand access."""
-    query = select(CodeRule)
+    query = select(CodeRule).options(joinedload(CodeRule.brand))
     
     # Filter by brand access first
     accessible_brands = get_user_brand_access(current_user)
@@ -37,8 +38,24 @@ async def list_rules(
     
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
-    rules = result.scalars().all()
-    return rules
+    rules = result.unique().scalars().all()
+    
+    # Build enhanced responses with brand_name
+    enhanced_rules = []
+    for rule in rules:
+        enhanced_rule = CodeRuleEnhancedResponse(
+            id=rule.id,
+            brand_id=rule.brand_id,
+            rule_type=rule.rule_type,
+            rule_content=rule.rule_content,
+            priority=rule.priority,
+            created_at=rule.created_at,
+            updated_at=rule.updated_at,
+            brand_name=rule.brand.name if rule.brand else None
+        )
+        enhanced_rules.append(enhanced_rule)
+    
+    return enhanced_rules
 
 
 @router.post("/", response_model=CodeRuleResponse, status_code=status.HTTP_201_CREATED)
@@ -61,20 +78,33 @@ async def create_rule(
     return db_rule
 
 
-@router.get("/{rule_id}", response_model=CodeRuleResponse, status_code=status.HTTP_200_OK)
+@router.get("/{rule_id}", response_model=CodeRuleEnhancedResponse, status_code=status.HTTP_200_OK)
 async def get_rule(
     rule_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin"))
 ):
     """Get a code rule by ID."""
-    result = await db.execute(select(CodeRule).where(CodeRule.id == rule_id))
-    rule = result.scalar_one_or_none()
+    result = await db.execute(
+        select(CodeRule)
+        .options(joinedload(CodeRule.brand))
+        .where(CodeRule.id == rule_id)
+    )
+    rule = result.unique().scalar_one_or_none()
     
     if not rule:
         raise NotFoundException("CodeRule", rule_id)
     
-    return rule
+    return CodeRuleEnhancedResponse(
+        id=rule.id,
+        brand_id=rule.brand_id,
+        rule_type=rule.rule_type,
+        rule_content=rule.rule_content,
+        priority=rule.priority,
+        created_at=rule.created_at,
+        updated_at=rule.updated_at,
+        brand_name=rule.brand.name if rule.brand else None
+    )
 
 
 @router.put("/{rule_id}", response_model=CodeRuleResponse, status_code=status.HTTP_200_OK)

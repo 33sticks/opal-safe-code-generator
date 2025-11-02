@@ -72,7 +72,7 @@ export function TemplatesTable({ onEdit }: TemplatesTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Brand ID</TableHead>
+              <TableHead>Brand</TableHead>
               <TableHead>Test Type</TableHead>
               <TableHead>Version</TableHead>
               <TableHead>Active</TableHead>
@@ -84,7 +84,7 @@ export function TemplatesTable({ onEdit }: TemplatesTableProps) {
             {templates.map((template: Template) => (
               <TableRow key={template.id}>
                 <TableCell>{template.id}</TableCell>
-                <TableCell>{template.brand_id}</TableCell>
+                <TableCell>{template.brand_name || `Brand ${template.brand_id}`}</TableCell>
                 <TableCell className="font-medium">{template.test_type}</TableCell>
                 <TableCell>{template.version}</TableCell>
                 <TableCell>

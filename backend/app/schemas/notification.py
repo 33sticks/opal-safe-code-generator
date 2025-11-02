@@ -33,3 +33,4 @@ class NotificationCreate(BaseModel):
     title: str
     message: str
 
+

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,8 @@ export function ReviewCodeModal({
 }: ReviewCodeModalProps) {
   const [reviewDecision, setReviewDecision] = useState<'approved' | 'rejected' | null>(null)
   const [notes, setNotes] = useState('')
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollPositionRef = useRef<number>(0)
   const { toast } = useToast()
   const reviewMutation = useReviewGeneratedCode()
   const { data: conversation, isLoading: isLoadingConversation } = useCodeConversation(
@@ -60,6 +62,76 @@ export function ReviewCodeModal({
         error_logs: code.error_logs,
       }
     : null
+
+  // Restore scroll position after reviewDecision state updates
+  // Use multiple restoration attempts to override browser's default scroll behavior
+  useLayoutEffect(() => {
+    if (scrollContainerRef.current && scrollPositionRef.current !== 0) {
+      const savedPosition = scrollPositionRef.current
+      
+      // Immediate restoration
+      scrollContainerRef.current.scrollTop = savedPosition
+      
+      // Restore again after browser's render cycle (prevents browser override)
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = savedPosition
+        }
+      })
+      
+      // Final restoration after a microtask delay (catches late browser scroll)
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = savedPosition
+        }
+      }, 0)
+      
+      // Reset after restoring to avoid interfering with normal scrolling
+      scrollPositionRef.current = 0
+    }
+  }, [reviewDecision])
+
+  // Reset scroll position ref when modal opens/closes
+  useLayoutEffect(() => {
+    if (!open) {
+      scrollPositionRef.current = 0
+    }
+  }, [open])
+
+  // Handle review decision change while preserving scroll position
+  const handleDecisionChange = (decision: 'approved' | 'rejected') => {
+    // Store current scroll position before state update
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop
+    }
+    
+    setReviewDecision(decision)
+  }
+
+  // Prevent focus-based scrolling
+  const handleRadioFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const savedPosition = scrollPositionRef.current
+    
+    // Immediately restore scroll position to prevent browser scroll
+    if (scrollContainerRef.current && savedPosition !== 0) {
+      scrollContainerRef.current.scrollTop = savedPosition
+    }
+    
+    // Also restore after a microtask to catch any browser-initiated scroll
+    requestAnimationFrame(() => {
+      if (scrollContainerRef.current && savedPosition !== 0) {
+        scrollContainerRef.current.scrollTop = savedPosition
+      }
+    })
+  }
+
+  // Handle click to capture scroll position immediately
+  const handleRadioClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    // Capture scroll position on click (before onChange fires)
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop
+    }
+  }
 
   const handleSubmit = async () => {
     if (!code || !reviewDecision) {
@@ -111,7 +183,7 @@ export function ReviewCodeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 min-h-0">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto space-y-6 min-h-0">
           {/* Conversation History */}
           <div>
             <h3 className="font-semibold mb-2">Conversation History:</h3>
@@ -155,7 +227,9 @@ export function ReviewCodeModal({
                     name="reviewDecision"
                     value="approved"
                     checked={reviewDecision === 'approved'}
-                    onChange={() => setReviewDecision('approved')}
+                    onChange={() => handleDecisionChange('approved')}
+                    onClick={handleRadioClick}
+                    onFocus={handleRadioFocus}
                     className="w-4 h-4"
                   />
                   <span>Approve</span>
@@ -166,7 +240,9 @@ export function ReviewCodeModal({
                     name="reviewDecision"
                     value="rejected"
                     checked={reviewDecision === 'rejected'}
-                    onChange={() => setReviewDecision('rejected')}
+                    onChange={() => handleDecisionChange('rejected')}
+                    onClick={handleRadioClick}
+                    onFocus={handleRadioFocus}
                     className="w-4 h-4"
                   />
                   <span>Reject</span>

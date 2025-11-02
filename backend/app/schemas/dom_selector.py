@@ -36,3 +36,12 @@ class DOMSelectorResponse(DOMSelectorBase):
     
     class Config:
         from_attributes = True
+
+
+class DOMSelectorEnhancedResponse(DOMSelectorResponse):
+    """Enhanced response with brand name."""
+    brand_name: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+

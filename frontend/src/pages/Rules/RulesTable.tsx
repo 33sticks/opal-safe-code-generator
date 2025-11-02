@@ -72,7 +72,7 @@ export function RulesTable({ onEdit }: RulesTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Brand ID</TableHead>
+              <TableHead>Brand</TableHead>
               <TableHead>Rule Type</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Created</TableHead>
@@ -83,7 +83,7 @@ export function RulesTable({ onEdit }: RulesTableProps) {
             {rules.map((rule: CodeRule) => (
               <TableRow key={rule.id}>
                 <TableCell>{rule.id}</TableCell>
-                <TableCell>{rule.brand_id}</TableCell>
+                <TableCell>{rule.brand_name || `Brand ${rule.brand_id}`}</TableCell>
                 <TableCell className="font-medium">{rule.rule_type}</TableCell>
                 <TableCell>{rule.priority}</TableCell>
                 <TableCell>
