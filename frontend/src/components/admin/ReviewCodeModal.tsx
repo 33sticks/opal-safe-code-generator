@@ -109,7 +109,7 @@ export function ReviewCodeModal({
   }
 
   // Prevent focus-based scrolling
-  const handleRadioFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleRadioFocus = (_e: React.FocusEvent<HTMLInputElement>) => {
     const savedPosition = scrollPositionRef.current
     
     // Immediately restore scroll position to prevent browser scroll
@@ -126,7 +126,7 @@ export function ReviewCodeModal({
   }
 
   // Handle click to capture scroll position immediately
-  const handleRadioClick = (e: React.MouseEvent<HTMLInputElement>) => {
+  const handleRadioClick = (_e: React.MouseEvent<HTMLInputElement>) => {
     // Capture scroll position on click (before onChange fires)
     if (scrollContainerRef.current) {
       scrollPositionRef.current = scrollContainerRef.current.scrollTop
