@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { isAuthenticated, loading, isSuperAdmin, isBrandAdmin } = useAuth()
+  const location = useLocation()
 
   // Show loading state while checking auth
   if (loading) {
@@ -25,13 +26,19 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />
   }
 
+  // Redirect super admins away from chat
+  if (location.pathname === '/chat' && isSuperAdmin()) {
+    return <Navigate to="/brands" replace />
+  }
+
   // Check role requirements
   if (requiredRole === 'admin') {
     // Allow access if user is super_admin or brand_admin
     const hasAdminAccess = isSuperAdmin() || isBrandAdmin()
     if (!hasAdminAccess) {
-      // User tried to access admin route, redirect to their chat page
-      return <Navigate to="/chat" replace />
+      // Super admins go to brands, others to chat
+      const redirectTo = isSuperAdmin() ? '/brands' : '/chat'
+      return <Navigate to={redirectTo} replace />
     }
   }
 

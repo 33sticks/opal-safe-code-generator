@@ -25,7 +25,6 @@ const superAdminNavigation = [
   { name: 'Generated Code', href: '/generated-code', icon: Code },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'My Requests', href: '/my-requests', icon: FolderOpen },
   { name: 'Notifications', href: '/notifications', icon: Bell },
 ]

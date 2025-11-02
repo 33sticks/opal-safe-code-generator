@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle } from 'lucide-react'
 import { sendChatMessage, getConversations, getConversation } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/AuthContext'
 import type { Message, ConversationPreview, ChatMessageResponse, GeneratedCode } from '@/types/chat'
 
 export function Chat() {
@@ -18,6 +19,14 @@ export function Chat() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { isSuperAdmin } = useAuth()
+
+  // Redirect super admins away from chat
+  useEffect(() => {
+    if (isSuperAdmin()) {
+      navigate('/brands', { replace: true })
+    }
+  }, [isSuperAdmin, navigate])
 
   // Fetch conversations list
   const {

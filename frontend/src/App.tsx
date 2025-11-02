@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Layout } from '@/components/layout/Layout'
 import { Login } from '@/pages/Login'
+import { ForgotPassword } from '@/pages/ForgotPassword'
 import { Chat } from '@/pages/Chat'
 import { BrandsPage } from '@/pages/Brands/BrandsPage'
 import { TemplatesPage } from '@/pages/Templates/TemplatesPage'
@@ -33,6 +34,7 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
             {/* Protected routes */}
             <Route

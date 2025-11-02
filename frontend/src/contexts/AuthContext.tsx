@@ -107,11 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setUser(userData)
       
-      // Redirect based on role
-      if (userData.role === 'admin') {
+      // Redirect based on brand role
+      if (userData.brand_role === 'super_admin') {
         navigate('/brands')
-      } else {
+      } else if (userData.brand_role === 'brand_admin' || userData.brand_role === 'brand_user') {
         navigate('/chat')
+      } else {
+        // Fallback for any other role
+        navigate('/brands')
       }
     } catch (error: any) {
       throw new Error(error.response?.data?.detail || 'Login failed')
