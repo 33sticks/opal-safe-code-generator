@@ -13,6 +13,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -184,6 +185,9 @@ export function SelectorsForm({ open, onOpenChange, selectorId }: SelectorsFormP
                         <SelectItem value={PageType.SEARCH}>Search</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      This selector will be used when generating code for the selected page type
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -203,6 +207,9 @@ export function SelectorsForm({ open, onOpenChange, selectorId }: SelectorsFormP
                         {...field}
                       />
                     </FormControl>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Use stable selectors that won't break with design changes. Test thoroughly.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

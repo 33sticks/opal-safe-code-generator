@@ -13,6 +13,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -173,8 +174,11 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
                   <FormItem>
                     <FormLabel>Domain</FormLabel>
                     <FormControl>
-                      <Input placeholder="example.com" {...field} />
+                      <Input placeholder="vans.com" {...field} />
                     </FormControl>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Primary website domain for this brand
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -217,6 +221,12 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
                         {...field}
                       />
                     </FormControl>
+                    <FormDescription>
+                      Controls code structure, logging, and style for all generated code. Options: leave empty for default behavior, or provide custom JSON. Starter templates coming soon.
+                    </FormDescription>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Optional - Leave empty for default behavior
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -13,6 +13,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -138,8 +139,20 @@ export function PageTypeKnowledgeForm({ open, onOpenChange, knowledgeId }: PageT
             <LoadingSpinner size="lg" />
           </div>
         ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                What is Page Type Knowledge?
+              </h3>
+              <p className="text-sm text-blue-800">
+                This is <strong>NOT</strong> about test types (unit tests, integration tests, etc.). 
+                This <strong>IS</strong> about page-specific patterns and knowledge. Document patterns like 
+                PDP product structure, Cart page behavior, Checkout flow elements, and other page-specific 
+                knowledge that helps the code generator understand how different page types work.
+              </p>
+            </div>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="brand_id"
@@ -188,6 +201,9 @@ export function PageTypeKnowledgeForm({ open, onOpenChange, knowledgeId }: PageT
                         <SelectItem value={TestType.CATEGORY}>Category</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      Select the page type this knowledge applies to (e.g., PDP, Cart, Checkout)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -207,6 +223,11 @@ export function PageTypeKnowledgeForm({ open, onOpenChange, knowledgeId }: PageT
                         height="300px"
                       />
                     </FormControl>
+                    <FormDescription>
+                      Document page patterns, DOM structure, interactions, and behaviors specific to this page type. 
+                      Include information about common elements, their selectors, typical user flows, and any 
+                      page-specific considerations for code generation.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -281,6 +302,7 @@ export function PageTypeKnowledgeForm({ open, onOpenChange, knowledgeId }: PageT
               </DialogFooter>
             </form>
           </Form>
+          </>
         )}
       </DialogContent>
     </Dialog>
