@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { StabilityScore } from './StabilityScore'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { DomAnalysisResult } from '@/types'
 import { ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 
@@ -10,6 +11,7 @@ interface AnalysisResultsProps {
   selectedSelectors: Set<number>
   onToggleSelector: (index: number) => void
   onAddSelectors: () => void
+  isAdding?: boolean
 }
 
 export function AnalysisResults({
@@ -17,6 +19,7 @@ export function AnalysisResults({
   selectedSelectors,
   onToggleSelector,
   onAddSelectors,
+  isAdding = false,
 }: AnalysisResultsProps) {
   const [expandedSelectors, setExpandedSelectors] = useState<Set<number>>(new Set())
 
@@ -146,9 +149,16 @@ export function AnalysisResults({
       <div className="flex justify-end">
         <Button
           onClick={onAddSelectors}
-          disabled={selectedSelectors.size === 0}
+          disabled={selectedSelectors.size === 0 || isAdding}
         >
-          Add Selected to Database ({selectedSelectors.size})
+          {isAdding ? (
+            <>
+              <LoadingSpinner size="sm" className="mr-2" />
+              Adding...
+            </>
+          ) : (
+            `Add Selected to Database (${selectedSelectors.size})`
+          )}
         </Button>
       </div>
 

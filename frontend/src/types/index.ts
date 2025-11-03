@@ -142,6 +142,7 @@ export interface DOMSelector {
   selector: string
   description?: string
   status: SelectorStatus
+  relationships?: Record<string, any>
   created_at: string
   updated_at: string
   brand_name?: string
@@ -153,6 +154,7 @@ export interface DOMSelectorCreate {
   selector: string
   description?: string
   status?: SelectorStatus
+  relationships?: Record<string, any>
 }
 
 export interface DOMSelectorUpdate {

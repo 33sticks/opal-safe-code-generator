@@ -10,6 +10,7 @@ import api, {
   getMyRequests,
   createUser,
   analyzeDom,
+  createSelectorsBulk,
 } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 import type {
@@ -187,6 +188,16 @@ export function useCreateSelector() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (selector: DOMSelectorCreate) => api.post<DOMSelector>('/selectors/', selector).then(res => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['selectors'] })
+    },
+  })
+}
+
+export function useCreateSelectorsBulk() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (selectors: DOMSelectorCreate[]) => createSelectorsBulk(selectors),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['selectors'] })
     },

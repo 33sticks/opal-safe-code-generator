@@ -224,3 +224,26 @@ export async function analyzeDom(data: {
   return response.data
 }
 
+// DOM Selector API functions
+export async function createSelectorsBulk(
+  selectors: Array<{
+    brand_id: number
+    selector: string
+    page_type: string
+    description?: string
+    status?: string
+    relationships?: Record<string, any>
+  }>
+): Promise<{
+  created: number
+  skipped: number
+  selectors: Array<any>
+}> {
+  const response = await api.post<{
+    created: number
+    skipped: number
+    selectors: Array<any>
+  }>('/selectors/bulk', selectors)
+  return response.data
+}
+

@@ -11,8 +11,8 @@ import {
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { AnalysisResults } from './AnalysisResults'
-import { useAnalyzeDom } from '@/hooks/useApi'
-import { DomAnalysisResult, PageType } from '@/types'
+import { useAnalyzeDom, useCreateSelectorsBulk } from '@/hooks/useApi'
+import { DomAnalysisResult, PageType, DOMSelectorCreate, SelectorStatus } from '@/types'
 import { useToast } from '@/hooks/use-toast'
 
 interface DomAnalysisToolProps {
@@ -27,6 +27,7 @@ export function DomAnalysisTool({ brandId }: DomAnalysisToolProps) {
   const { toast } = useToast()
 
   const analyzeMutation = useAnalyzeDom()
+  const createBulkMutation = useCreateSelectorsBulk()
 
   const handleAnalyze = async () => {
     if (!html.trim()) {
@@ -65,12 +66,74 @@ export function DomAnalysisTool({ brandId }: DomAnalysisToolProps) {
     setSelectedSelectors(newSelected)
   }
 
-  const handleAddSelectors = () => {
-    // Placeholder for Task 3.5
-    toast({
-      title: 'Feature Coming Soon',
-      description: 'Add selected selectors to database functionality will be implemented in the next task.',
-    })
+  const handleAddSelectors = async () => {
+    if (selectedSelectors.size === 0) {
+      toast({
+        title: 'No Selectors Selected',
+        description: 'Please select at least one selector to add to the database.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!brandId) {
+      toast({
+        title: 'Brand ID Required',
+        description: 'Brand ID is required to create selectors.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!results) {
+      toast({
+        title: 'No Results',
+        description: 'Please analyze HTML first before adding selectors.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      // Build selector objects from selected indices
+      const selectorsToAdd: DOMSelectorCreate[] = Array.from(selectedSelectors).map(index => ({
+        brand_id: brandId,
+        selector: results.selectors[index].selector,
+        page_type: pageType,
+        description: results.selectors[index].description,
+        status: SelectorStatus.ACTIVE,
+        relationships: {
+          parent: results.selectors[index].parent || null,
+          children: results.selectors[index].children || [],
+          siblings: results.selectors[index].siblings || [],
+          stability_score: results.selectors[index].stability_score,
+          element_type: results.selectors[index].element_type,
+        },
+      }))
+
+      const response = await createBulkMutation.mutateAsync(selectorsToAdd)
+
+      // Show success toast with detailed feedback
+      const message = response.skipped > 0
+        ? `Added ${response.created} selector${response.created !== 1 ? 's' : ''} to database (${response.skipped} duplicate${response.skipped !== 1 ? 's' : ''} skipped)`
+        : `Added ${response.created} selector${response.created !== 1 ? 's' : ''} to database`
+
+      toast({
+        title: 'Success',
+        description: message,
+      })
+
+      // Clear form after successful addition
+      setSelectedSelectors(new Set())
+      setResults(null)
+      setHtml('')
+    } catch (error) {
+      toast({
+        title: 'Failed to Add Selectors',
+        description: error instanceof Error ? error.message : 'An error occurred while adding selectors to the database.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
@@ -150,6 +213,7 @@ export function DomAnalysisTool({ brandId }: DomAnalysisToolProps) {
             selectedSelectors={selectedSelectors}
             onToggleSelector={handleToggleSelector}
             onAddSelectors={handleAddSelectors}
+            isAdding={createBulkMutation.isPending}
           />
         </div>
       )}
