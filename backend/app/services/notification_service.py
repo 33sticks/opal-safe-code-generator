@@ -89,3 +89,4 @@ class NotificationService:
         return result.scalar_one() or 0
 
 
+

@@ -95,6 +95,13 @@ export interface BrandUpdate {
   code_template?: Record<string, any>
 }
 
+// Brand Template types
+export interface BrandTemplate {
+  name: string
+  description: string
+  platform: string
+}
+
 // Page Type Knowledge types
 export interface PageTypeKnowledge {
   id: number

@@ -15,6 +15,7 @@ import type {
   Brand,
   BrandCreate,
   BrandUpdate,
+  BrandTemplate,
   PageTypeKnowledge,
   PageTypeKnowledgeCreate,
   PageTypeKnowledgeUpdate,
@@ -80,6 +81,28 @@ export function useDeleteBrand() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] })
     },
+  })
+}
+
+// Brand Templates
+export function useBrandTemplates() {
+  return useQuery<BrandTemplate[]>({
+    queryKey: ['brand-templates'],
+    queryFn: async () => {
+      const { data } = await api.get<BrandTemplate[]>('/brand-templates/')
+      return data
+    },
+  })
+}
+
+export function useBrandTemplate(name: string) {
+  return useQuery<Record<string, any>>({
+    queryKey: ['brand-templates', name],
+    queryFn: async () => {
+      const { data } = await api.get<Record<string, any>>(`/brand-templates/${name}`)
+      return data
+    },
+    enabled: !!name && name !== 'custom',
   })
 }
 

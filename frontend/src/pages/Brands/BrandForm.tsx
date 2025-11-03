@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -33,6 +33,7 @@ import { useBrand, useCreateBrand, useUpdateBrand } from '@/hooks/useApi'
 import { useToast } from '@/hooks/use-toast'
 import { BrandStatus } from '@/types'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { BrandTemplateSelector } from '@/components/brands/BrandTemplateSelector'
 
 const brandSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -54,6 +55,8 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
   const createBrand = useCreateBrand()
   const updateBrand = useUpdateBrand()
   const { toast } = useToast()
+  const [selectedTemplate, setSelectedTemplate] = useState<object | null>(null)
+  const [isCustomMode, setIsCustomMode] = useState(false)
 
   const form = useForm<BrandFormValues>({
     resolver: zodResolver(brandSchema),
@@ -67,12 +70,18 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
 
   useEffect(() => {
     if (brand && brandId) {
+      const codeTemplate = brand.code_template || {}
       form.reset({
         name: brand.name,
         domain: brand.domain,
         status: brand.status,
-        code_template: JSON.stringify(brand.code_template || {}, null, 2),
+        code_template: Object.keys(codeTemplate).length > 0 
+          ? JSON.stringify(codeTemplate, null, 2)
+          : '',
       })
+      // Reset template selection when editing
+      setSelectedTemplate(null)
+      setIsCustomMode(Object.keys(codeTemplate).length > 0)
     } else {
       form.reset({
         name: '',
@@ -80,8 +89,23 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
         status: BrandStatus.ACTIVE,
         code_template: '',
       })
+      setSelectedTemplate(null)
+      setIsCustomMode(false)
     }
   }, [brand, brandId, form])
+
+  const handleTemplateSelect = (template: object | null) => {
+    setSelectedTemplate(template)
+    if (template === null) {
+      // Custom mode selected
+      setIsCustomMode(true)
+      form.setValue('code_template', '')
+    } else {
+      // Template selected - populate form
+      setIsCustomMode(false)
+      form.setValue('code_template', JSON.stringify(template, null, 2))
+    }
+  }
 
   const onSubmit = async (values: BrandFormValues) => {
     try {
@@ -207,30 +231,40 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="code_template"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Code Template (JSON)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder='{"key": "value"}'
-                        className="font-mono text-sm"
-                        rows={6}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Controls code structure, logging, and style for all generated code. Options: leave empty for default behavior, or provide custom JSON. Starter templates coming soon.
-                    </FormDescription>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Optional - Leave empty for default behavior
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <BrandTemplateSelector
+                  onTemplateSelect={handleTemplateSelect}
+                  currentTemplate={selectedTemplate}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="code_template"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Code Template (JSON)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder='{"key": "value"}'
+                          className="font-mono text-sm"
+                          rows={6}
+                          readOnly={selectedTemplate !== null && !isCustomMode}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {selectedTemplate && !isCustomMode
+                          ? 'Template JSON (read-only). Select a different template or choose "Custom" to edit manually.'
+                          : 'Controls code structure, logging, and style for all generated code. Select a template above or write custom JSON here. Leave empty for default behavior.'}
+                      </FormDescription>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Optional - Leave empty for default behavior
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <DialogFooter>
                 <Button
