@@ -1,0 +1,43 @@
+{
+  "name": "Debug-Focused",
+  "description": "Maximum logging and error tracking for troubleshooting",
+  "platform": "agnostic",
+  "code_structure": {
+    "use_strict": true,
+    "sections": [
+      "TEST HEADER",
+      "DEBUG CONFIGURATION",
+      "LOGGING UTILITIES",
+      "PERFORMANCE TRACKING",
+      "HELPER FUNCTIONS",
+      "MAIN EXECUTION"
+    ],
+    "section_separator": "============================================================================="
+  },
+  "header_format": {
+    "style": "block_comment",
+    "includes": [
+      "Test ID",
+      "Test Name",
+      "Summary",
+      "Version",
+      "Debug Level"
+    ]
+  },
+  "variables": {
+    "style": "const",
+    "naming_convention": "UPPER_SNAKE_CASE"
+  },
+  "logging": {
+    "enabled": true,
+    "default_level": "DEBUG",
+    "levels": ["DEBUG", "INFO", "WARN", "ERROR"],
+    "prefix_format": "[{TEST_ID}][{TIMESTAMP}]",
+    "timestamps": true,
+    "verbose": true
+  },
+  "features": {
+    "performance_timing": true,
+    "state_tracking": true
+  }
+}

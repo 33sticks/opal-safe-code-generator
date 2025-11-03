@@ -1,0 +1,27 @@
+{
+  "name": "Minimal",
+  "description": "Lean template with essential features only",
+  "platform": "agnostic",
+  "code_structure": {
+    "use_strict": true,
+    "sections": ["CONFIG", "EXECUTION"],
+    "minimal": true
+  },
+  "header_format": {
+    "style": "single_line_comment",
+    "includes": ["Test ID", "Summary"]
+  },
+  "variables": {
+    "style": "const",
+    "minimal": true
+  },
+  "logging": {
+    "enabled": true,
+    "minimal": true,
+    "prefix_format": "[{TEST_ID}]"
+  },
+  "utilities": {
+    "platform": "agnostic",
+    "use_utils": false
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "name": "Adobe Target Standard",
+  "description": "Enterprise-grade template with conservative JavaScript and robust page detection",
+  "platform": "adobe_target",
+  "code_structure": {
+    "wrapper": "iife",
+    "use_strict": true,
+    "sections": [
+      "CONFIGURATION VARIABLES",
+      "HELPER FUNCTIONS",
+      "MAIN LOGIC",
+      "PAGE DETECTION",
+      "INITIALIZATION",
+      "SPA NAVIGATION"
+    ],
+    "section_separator": "============================================================================="
+  },
+  "header_format": {
+    "style": "block_comment",
+    "includes": [
+      "Test Name",
+      "Summary",
+      "Property",
+      "Target",
+      "Version",
+      "Last Updated",
+      "UPDATES"
+    ]
+  },
+  "variables": {
+    "style": "var",
+    "naming_convention": "UPPER_SNAKE_CASE",
+    "version_constant": "VERSION",
+    "test_id_constant": "TEST_ID"
+  },
+  "logging": {
+    "enabled": true,
+    "toggleable": true,
+    "function_name": "log",
+    "prefix_format": "[{TEST_ID}] V{VERSION}",
+    "config_var": "LOGGING_ENABLED",
+    "use_emojis": false
+  },
+  "utilities": {
+    "platform": "adobe_target",
+    "use_utils": false,
+    "monitoring": {
+      "use_intervals": true,
+      "duration_var": "MONITORING_DURATION_SECONDS",
+      "interval_var": "MONITORING_INTERVAL_MS"
+    }
+  },
+  "features": {
+    "page_detection": "required",
+    "spa_navigation": "standard",
+    "processed_attribute": true
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "name": "Optimizely Standard",
+  "description": "Professional template with robust features and Optimizely utils integration",
+  "platform": "optimizely",
+  "code_structure": {
+    "use_strict": true,
+    "sections": [
+      "TEST HEADER",
+      "CONFIGURATION",
+      "CONSTANTS",
+      "LOGGING UTILITIES",
+      "HELPER FUNCTIONS",
+      "MAIN EXECUTION"
+    ],
+    "section_separator": "============================================================================="
+  },
+  "header_format": {
+    "style": "block_comment",
+    "includes": [
+      "Test ID",
+      "Test Name",
+      "Summary",
+      "Version",
+      "Last Updated",
+      "Features"
+    ]
+  },
+  "variables": {
+    "style": "const",
+    "naming_convention": "UPPER_SNAKE_CASE",
+    "config_object_name": "CONFIG"
+  },
+  "logging": {
+    "enabled": true,
+    "prefix_format": "[{TEST_ID}]",
+    "levels": ["DEBUG", "INFO", "WARN", "ERROR", "NONE"],
+    "default_level": "INFO",
+    "function_name": "log",
+    "use_emojis": false
+  },
+  "utilities": {
+    "platform": "optimizely",
+    "use_utils": true,
+    "utils_variable": "window.optimizely.get('utils')",
+    "wait_method": "utils.waitForElement"
+  },
+  "error_handling": {
+    "use_try_catch": true,
+    "log_errors": true
+  }
+}
