@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChatLayout } from '@/components/chat/ChatLayout'
@@ -11,11 +11,30 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Message, ConversationPreview, ChatMessageResponse, GeneratedCode } from '@/types/chat'
 
+const GENERATION_TIMEOUT = 30000 // 30 seconds
+const PROGRESS_UPDATE_INTERVAL = 1500 // 1.5 seconds
+
+const PROGRESS_STEPS = [
+  'Analyzing your request...',
+  'Searching for relevant selectors...',
+  'Building context for AI...',
+  'Generating code...',
+  'Validating output...',
+  'Almost done...',
+]
+
 export function Chat() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [generatedCodeMap, setGeneratedCodeMap] = useState<Map<number, GeneratedCode>>(new Map())
   const [showCodeSubmitted, setShowCodeSubmitted] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationStatus, setGenerationStatus] = useState<string>('')
+  const [generationError, setGenerationError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [lastMessageForRetry, setLastMessageForRetry] = useState<string | null>(null)
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -48,6 +67,38 @@ export function Chat() {
     enabled: !!selectedConversationId,
   })
 
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Simulate progress updates
+  const simulateProgress = () => {
+    let currentStep = 0
+    setGenerationStatus(PROGRESS_STEPS[0])
+
+    progressIntervalRef.current = setInterval(() => {
+      currentStep++
+      if (currentStep < PROGRESS_STEPS.length) {
+        setGenerationStatus(PROGRESS_STEPS[currentStep])
+      }
+    }, PROGRESS_UPDATE_INTERVAL)
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
+    }
+  }
+
   // Update messages and generated code when history loads
   useEffect(() => {
     if (conversationHistory) {
@@ -74,6 +125,30 @@ export function Chat() {
     mutationFn: ({ message, conversationId }: { message: string; conversationId?: string | null }) =>
       sendChatMessage(message, conversationId),
     onMutate: async ({ message }) => {
+      // Clear any previous errors
+      setGenerationError(null)
+      setLastMessageForRetry(message)
+      
+      // Start loading state and progress simulation for code generation
+      // (We don't know if it will generate code yet, but we'll show loading during the request)
+      setIsGenerating(true)
+      simulateProgress()
+      
+      // Set timeout
+      timeoutRef.current = setTimeout(() => {
+        setIsGenerating(false)
+        setGenerationError('Code generation is taking longer than expected. Please try again.')
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current)
+          progressIntervalRef.current = null
+        }
+        toast({
+          title: 'Timeout',
+          description: 'Code generation is taking longer than expected. Please try again.',
+          variant: 'destructive',
+        })
+      }, GENERATION_TIMEOUT)
+      
       // Optimistic update - add user message
       const optimisticMessage: Message = {
         id: Date.now(), // Temporary ID
@@ -85,6 +160,21 @@ export function Chat() {
       setMessages((prev) => [...prev, optimisticMessage])
     },
     onSuccess: (response: ChatMessageResponse) => {
+      // Clear timeout and progress interval
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
+
+      // Stop loading state
+      setIsGenerating(false)
+      setGenerationStatus('')
+      setLastMessageForRetry(null)
+
       // Add assistant response
       const assistantMessage: Message = {
         id: Date.now() + 1,
@@ -104,6 +194,9 @@ export function Chat() {
         })
         // Show success message
         setShowCodeSubmitted(true)
+        // Show success animation
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 2000)
         // Auto-hide after 10 seconds
         setTimeout(() => setShowCodeSubmitted(false), 10000)
       }
@@ -120,6 +213,19 @@ export function Chat() {
       })
     },
     onError: (error: Error) => {
+      // Clear loading state on error
+      setIsGenerating(false)
+      setGenerationStatus('')
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+
+      setGenerationError(error.message || 'Failed to generate code')
       toast({
         title: 'Error',
         description: error.message || 'Failed to send message',
@@ -131,10 +237,35 @@ export function Chat() {
   })
 
   const handleSendMessage = (message: string) => {
+    setGenerationError(null)
     sendMessageMutation.mutate({
       message,
       conversationId: selectedConversationId,
     })
+  }
+
+  const handleRetry = () => {
+    if (lastMessageForRetry) {
+      setGenerationError(null)
+      sendMessageMutation.mutate({
+        message: lastMessageForRetry,
+        conversationId: selectedConversationId,
+      })
+    }
+  }
+
+  const handleCancelGeneration = () => {
+    // UI-only cancel - doesn't abort backend request
+    setIsGenerating(false)
+    setGenerationStatus('')
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = null
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
   }
 
   const handleSelectConversation = (id: string) => {
@@ -215,6 +346,12 @@ export function Chat() {
         onSendMessage={handleSendMessage}
         isSending={sendMessageMutation.isPending}
         isLoadingHistory={isLoadingHistory}
+        isGenerating={isGenerating}
+        generationStatus={generationStatus}
+        generationError={generationError}
+        showSuccess={showSuccess}
+        onRetry={handleRetry}
+        onCancelGeneration={handleCancelGeneration}
       />
     </div>
   )

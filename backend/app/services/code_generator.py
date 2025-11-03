@@ -63,7 +63,7 @@ class CodeGeneratorService:
             response = await asyncio.to_thread(
                 self.client.messages.create,
                 model="claude-sonnet-4-20250514",
-                max_tokens=8192,  # Increased for complex code generation
+                max_tokens=16384,  # Increased for complex code generation with selector relationships and context
                 messages=[{"role": "user", "content": prompt}]
             )
             
@@ -75,12 +75,12 @@ class CodeGeneratorService:
             # Check stop_reason to detect truncation
             stop_reason = getattr(response, 'stop_reason', None)
             if stop_reason == "max_tokens":
-                logger.warning(f"Code generation hit token limit (max_tokens={8192}). Output may be truncated.")
+                logger.warning(f"Code generation hit token limit (max_tokens=16384). Output may be truncated.")
             elif stop_reason:
                 logger.info(f"Response stop_reason: {stop_reason}")
             
             # Log response details
-            logger.info(f"Generated code response - stop_reason: {stop_reason}, completion_tokens: {completion_tokens}/{8192}")
+            logger.info(f"Generated code response - stop_reason: {stop_reason}, completion_tokens: {completion_tokens}/16384")
             
             # Parse response
             parsed_response = self._parse_claude_response(response)

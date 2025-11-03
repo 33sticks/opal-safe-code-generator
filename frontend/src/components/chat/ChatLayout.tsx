@@ -13,6 +13,12 @@ interface ChatLayoutProps {
   onSendMessage: (message: string) => void
   isSending?: boolean
   isLoadingHistory?: boolean
+  isGenerating?: boolean
+  generationStatus?: string
+  generationError?: string | null
+  showSuccess?: boolean
+  onRetry?: () => void
+  onCancelGeneration?: () => void
 }
 
 export function ChatLayout({
@@ -25,6 +31,12 @@ export function ChatLayout({
   onSendMessage,
   isSending = false,
   isLoadingHistory = false,
+  isGenerating = false,
+  generationStatus = '',
+  generationError = null,
+  showSuccess = false,
+  onRetry,
+  onCancelGeneration,
 }: ChatLayoutProps) {
   return (
     <div className="flex h-full">
@@ -35,8 +47,22 @@ export function ChatLayout({
         onNewChat={onNewChat}
       />
       <div className="flex-1 flex flex-col">
-        <MessageList messages={messages} generatedCodeMap={generatedCodeMap} isLoading={isLoadingHistory} />
-        <ChatInput onSendMessage={onSendMessage} disabled={isSending} />
+        <MessageList
+          messages={messages}
+          generatedCodeMap={generatedCodeMap}
+          isLoading={isLoadingHistory}
+          isGenerating={isGenerating}
+          generationStatus={generationStatus}
+          generationError={generationError}
+          showSuccess={showSuccess}
+          onRetry={onRetry}
+          onCancelGeneration={onCancelGeneration}
+        />
+        <ChatInput
+          onSendMessage={onSendMessage}
+          disabled={isSending || isGenerating}
+          isGenerating={isGenerating}
+        />
       </div>
     </div>
   )

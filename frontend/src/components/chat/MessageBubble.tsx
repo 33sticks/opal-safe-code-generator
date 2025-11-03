@@ -22,7 +22,12 @@ export function MessageBubble({ message, generatedCode }: MessageBubbleProps) {
         >
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         </div>
-        {generatedCode && <CodeBlock code={generatedCode} />}
+        {message.generated_code_id && (
+          <CodeBlock
+            code={generatedCode || undefined}
+            isLoading={!generatedCode}
+          />
+        )}
         <span className="text-xs text-muted-foreground mt-1">
           {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
         </span>

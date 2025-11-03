@@ -3,20 +3,23 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Copy, Check, Info } from 'lucide-react'
 import { ConfidenceScoreBreakdown } from './ConfidenceScoreBreakdown'
 import type { GeneratedCode } from '@/types/chat'
 
 interface CodeBlockProps {
-  code: GeneratedCode
+  code?: GeneratedCode
+  isLoading?: boolean
 }
 
-export function CodeBlock({ code }: CodeBlockProps) {
+export function CodeBlock({ code, isLoading = false }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
   const [showBreakdown, setShowBreakdown] = useState(false)
 
   // Process the code string to handle escaped newlines and JSON encoding
   const processedCode = useMemo(() => {
+    if (!code) return ''
     let codeString = code.generated_code
 
     // If code is a JSON string, try to parse it
@@ -47,9 +50,10 @@ export function CodeBlock({ code }: CodeBlockProps) {
     codeString = codeString.replace(/\\"/g, '"')
 
     return codeString
-  }, [code.generated_code])
+  }, [code?.generated_code])
 
   const handleCopy = async () => {
+    if (!code) return
     try {
       await navigator.clipboard.writeText(processedCode)
       setCopied(true)
@@ -57,6 +61,26 @@ export function CodeBlock({ code }: CodeBlockProps) {
     } catch (err) {
       console.error('Failed to copy code:', err)
     }
+  }
+
+  if (isLoading || !code) {
+    return (
+      <Card className="mt-4">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-4/5" />
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
