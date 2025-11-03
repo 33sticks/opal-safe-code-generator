@@ -1,4 +1,4 @@
-"""Template model."""
+"""Page Type Knowledge model."""
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -6,10 +6,10 @@ from app.database import Base
 from app.models.enums import TestType
 
 
-class Template(Base):
-    """Template model for code generation templates."""
+class PageTypeKnowledge(Base):
+    """Page Type Knowledge model for page-specific code generation patterns."""
     
-    __tablename__ = "templates"
+    __tablename__ = "page_type_knowledge"
     
     id = Column(Integer, primary_key=True, index=True)
     brand_id = Column(Integer, ForeignKey("brands.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -22,4 +22,5 @@ class Template(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    brand = relationship("Brand", back_populates="templates")
+    brand = relationship("Brand", back_populates="page_type_knowledge")
+

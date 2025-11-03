@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy import select
 from app.database import Base
 # Import all models to ensure relationships are resolved
-from app.models import Brand, Template, DOMSelector, CodeRule, GeneratedCode, User
+from app.models import Brand, PageTypeKnowledge, DOMSelector, CodeRule, GeneratedCode, User
 from app.models.enums import (
     BrandStatus, TestType, PageType, RuleType,
     SelectorStatus, UserRole, BrandRole
@@ -136,7 +136,7 @@ if (!utils) {{
             print("ℹ️  VANS brand already exists")
             
         # VANS Templates - check and create if missing
-        vans_templates_data = [
+        vans_knowledge_data = [
             {
                 "test_type": TestType.PDP,
                 "template_code": """'use strict';
@@ -216,21 +216,21 @@ function testCheckoutPage() {
             }
         ]
         
-        vans_templates_created = 0
-        for template_data in vans_templates_data:
+        vans_knowledge_created = 0
+        for knowledge_data in vans_knowledge_data:
             existing = await session.execute(
-                select(Template).where(
-                    Template.brand_id == vans_brand.id,
-                    Template.test_type == template_data["test_type"]
+                select(PageTypeKnowledge).where(
+                    PageTypeKnowledge.brand_id == vans_brand.id,
+                    PageTypeKnowledge.test_type == knowledge_data["test_type"]
                 )
             )
             if not existing.scalar_one_or_none():
-                template = Template(
+                knowledge = PageTypeKnowledge(
                     brand_id=vans_brand.id,
-                    **template_data
+                    **knowledge_data
                 )
-                session.add(template)
-                vans_templates_created += 1
+                session.add(knowledge)
+                vans_knowledge_created += 1
         
         # VANS DOM Selectors - check and create if missing
         vans_selectors_data = [
@@ -317,7 +317,7 @@ function testCheckoutPage() {
             print("ℹ️  Timberland brand already exists")
             
         # Timberland Templates - check and create if missing
-        timberland_templates_data = [
+        timberland_knowledge_data = [
             {
                 "test_type": TestType.PDP,
                 "template_code": """'use strict';
@@ -387,21 +387,21 @@ function testCheckoutPage() {
             }
         ]
         
-        timberland_templates_created = 0
-        for template_data in timberland_templates_data:
+        timberland_knowledge_created = 0
+        for knowledge_data in timberland_knowledge_data:
             existing = await session.execute(
-                select(Template).where(
-                    Template.brand_id == timberland_brand.id,
-                    Template.test_type == template_data["test_type"]
+                select(PageTypeKnowledge).where(
+                    PageTypeKnowledge.brand_id == timberland_brand.id,
+                    PageTypeKnowledge.test_type == knowledge_data["test_type"]
                 )
             )
             if not existing.scalar_one_or_none():
-                template = Template(
+                knowledge = PageTypeKnowledge(
                     brand_id=timberland_brand.id,
-                    **template_data
+                    **knowledge_data
                 )
-                session.add(template)
-                timberland_templates_created += 1
+                session.add(knowledge)
+                timberland_knowledge_created += 1
         
         # Timberland DOM Selectors - check and create if missing
         timberland_selectors_data = [
@@ -535,8 +535,8 @@ function testCheckoutPage() {
         
         await session.commit()
         print("\n✅ Seed data loaded successfully!")
-        print(f"   - VANS: {vans_templates_created} templates, {vans_selectors_created} selectors, {vans_rules_created} rules created")
-        print(f"   - Timberland: {timberland_templates_created} templates, {timberland_selectors_created} selectors, {timberland_rules_created} rules created")
+        print(f"   - VANS: {vans_knowledge_created} page knowledge entries, {vans_selectors_created} selectors, {vans_rules_created} rules created")
+        print(f"   - Timberland: {timberland_knowledge_created} page knowledge entries, {timberland_selectors_created} selectors, {timberland_rules_created} rules created")
     
     await engine.dispose()
 

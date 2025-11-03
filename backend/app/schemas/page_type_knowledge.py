@@ -1,12 +1,12 @@
-"""Template Pydantic schemas."""
+"""Page Type Knowledge Pydantic schemas."""
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 from app.models.enums import TestType
 
 
-class TemplateBase(BaseModel):
-    """Base template schema."""
+class PageTypeKnowledgeBase(BaseModel):
+    """Base page type knowledge schema."""
     brand_id: int
     test_type: TestType
     template_code: str = Field(..., min_length=1)
@@ -15,13 +15,13 @@ class TemplateBase(BaseModel):
     is_active: bool = Field(default=True)
 
 
-class TemplateCreate(TemplateBase):
-    """Schema for creating a template."""
+class PageTypeKnowledgeCreate(PageTypeKnowledgeBase):
+    """Schema for creating page type knowledge."""
     pass
 
 
-class TemplateUpdate(BaseModel):
-    """Schema for updating a template."""
+class PageTypeKnowledgeUpdate(BaseModel):
+    """Schema for updating page type knowledge."""
     brand_id: Optional[int] = None
     test_type: Optional[TestType] = None
     template_code: Optional[str] = Field(None, min_length=1)
@@ -30,8 +30,8 @@ class TemplateUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
-class TemplateResponse(TemplateBase):
-    """Schema for template response."""
+class PageTypeKnowledgeResponse(PageTypeKnowledgeBase):
+    """Schema for page type knowledge response."""
     id: int
     created_at: datetime
     updated_at: datetime
@@ -40,7 +40,7 @@ class TemplateResponse(TemplateBase):
         from_attributes = True
 
 
-class TemplateEnhancedResponse(TemplateResponse):
+class PageTypeKnowledgeEnhancedResponse(PageTypeKnowledgeResponse):
     """Enhanced response with brand name."""
     brand_name: Optional[str] = None
     

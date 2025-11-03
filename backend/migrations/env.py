@@ -7,7 +7,7 @@ from alembic import context
 
 # Import Base and all models for autogeneration
 from app.database import Base
-from app.models import Brand, Template, DOMSelector, CodeRule, GeneratedCode
+from app.models import Brand, PageTypeKnowledge, DOMSelector, CodeRule, GeneratedCode
 
 # This is the Alembic Config object
 config = context.config

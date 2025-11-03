@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import get_db
 from app.models.brand import Brand
-from app.models.template import Template
+from app.models.page_type_knowledge import PageTypeKnowledge
 from app.models.dom_selector import DOMSelector
 from app.models.code_rule import CodeRule
 from app.models.generated_code import GeneratedCode
@@ -45,7 +45,7 @@ async def discovery(request: Request):
         "functions": [
             {
                 "name": "generate_code",
-                "description": "Generate safe JavaScript code for A/B tests using brand-specific templates and selectors",
+                "description": "Generate safe JavaScript code for A/B tests using brand-specific page type knowledge and selectors",
                 "http_method": "POST",
                 "endpoint": f"{base_url}/api/v1/opal/generate-code",
                 "parameters": [
@@ -130,15 +130,15 @@ async def generate_code(
                 detail=f"Brand '{brand_name}' not found"
             )
         
-        # Query templates filtered by brand_id and test_type
-        templates_result = await db.execute(
-            select(Template).where(
-                Template.brand_id == brand.id,
-                Template.test_type == test_type_enum,
-                Template.is_active == True
+        # Query page type knowledge filtered by brand_id and test_type
+        knowledge_result = await db.execute(
+            select(PageTypeKnowledge).where(
+                PageTypeKnowledge.brand_id == brand.id,
+                PageTypeKnowledge.test_type == test_type_enum,
+                PageTypeKnowledge.is_active == True
             )
         )
-        templates = templates_result.scalars().all()
+        page_knowledge = knowledge_result.scalars().all()
         
         # Query selectors filtered by brand_id and page_type
         # Map test_type to page_type (they share the same enum values)
@@ -166,13 +166,13 @@ async def generate_code(
             "code_template": brand.code_template or {}  # Include brand code_template (may contain global_template)
         }
         
-        templates_data = [
+        page_knowledge_data = [
             {
-                "test_type": t.test_type.value,
-                "template_code": t.template_code,
-                "description": t.description
+                "test_type": k.test_type.value,
+                "template_code": k.template_code,
+                "description": k.description
             }
-            for t in templates
+            for k in page_knowledge
         ]
         
         selectors_data = [
@@ -196,7 +196,7 @@ async def generate_code(
         code_generator = CodeGeneratorService()
         result = await code_generator.generate_code(
             brand_context=brand_context,
-            templates=templates_data,
+            templates=page_knowledge_data,  # Keep parameter name as 'templates' for backward compatibility
             selectors=selectors_data,
             rules=rules_data,
             test_description=test_description

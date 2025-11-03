@@ -7,7 +7,7 @@ from fastapi import status
 from anthropic import APIError
 
 from app.models.brand import Brand
-from app.models.template import Template
+from app.models.page_type_knowledge import PageTypeKnowledge
 from app.models.dom_selector import DOMSelector
 from app.models.code_rule import CodeRule
 from app.models.enums import TestType, PageType, RuleType, SelectorStatus
@@ -149,7 +149,7 @@ class TestGenerateCodeEndpoint:
         test_db.add(brand)
         await test_db.flush()
         
-        template = Template(
+        template = PageTypeKnowledge(
             brand_id=brand.id,
             test_type=TestType.CHECKOUT,
             template_code="// Template code\nfunction test() { console.log('test'); }",
@@ -224,7 +224,7 @@ class TestGenerateCodeEndpoint:
         test_db.add(brand)
         await test_db.flush()
         
-        template = Template(
+        template = PageTypeKnowledge(
             brand_id=brand.id,
             test_type=TestType.CHECKOUT,
             template_code="// Template",
@@ -284,7 +284,7 @@ class TestGenerateCodeEndpoint:
         test_db.add(brand)
         await test_db.flush()
         
-        template = Template(
+        template = PageTypeKnowledge(
             brand_id=brand.id,
             test_type=TestType.CHECKOUT,
             template_code="// Template",
@@ -418,7 +418,7 @@ class TestGenerateCodeEndpoint:
         test_db.add(checkout_selector)
         test_db.add(pdp_selector)
         
-        template = Template(
+        template = PageTypeKnowledge(
             brand_id=brand.id,
             test_type=TestType.CHECKOUT,
             template_code="// Template",
@@ -478,7 +478,7 @@ class TestGenerateCodeEndpoint:
         test_db.add(brand)
         await test_db.flush()
         
-        template = Template(
+        template = PageTypeKnowledge(
             brand_id=brand.id,
             test_type=TestType.CHECKOUT,
             template_code="// Template",
@@ -525,7 +525,7 @@ class TestGenerateCodeEndpoint:
         test_db.add(brand)
         await test_db.flush()
         
-        template = Template(
+        template = PageTypeKnowledge(
             brand_id=brand.id,
             test_type=TestType.CHECKOUT,
             template_code="// Template",

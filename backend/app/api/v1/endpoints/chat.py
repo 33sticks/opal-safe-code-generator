@@ -16,7 +16,7 @@ from app.models.user import User
 from app.models.brand import Brand
 from app.models.conversation import Conversation
 from app.models.message import Message
-from app.models.template import Template
+from app.models.page_type_knowledge import PageTypeKnowledge
 from app.models.dom_selector import DOMSelector
 from app.models.code_rule import CodeRule
 from app.models.generated_code import GeneratedCode
@@ -405,15 +405,15 @@ async def send_message(
                             status="gathering_info"
                         )
                     
-                    # Query templates
-                    templates_result = await db.execute(
-                        select(Template).where(
-                            Template.brand_id == brand.id,
-                            Template.test_type == test_type_enum,
-                            Template.is_active == True
+                    # Query page type knowledge
+                    knowledge_result = await db.execute(
+                        select(PageTypeKnowledge).where(
+                            PageTypeKnowledge.brand_id == brand.id,
+                            PageTypeKnowledge.test_type == test_type_enum,
+                            PageTypeKnowledge.is_active == True
                         )
                     )
-                    templates = templates_result.scalars().all()
+                    page_knowledge = knowledge_result.scalars().all()
                     
                     selectors = []
                     if page_type_enum:
@@ -442,11 +442,11 @@ async def send_message(
                     
                     templates_data = [
                         {
-                            "test_type": t.test_type.value,
-                            "template_code": t.template_code,
-                            "description": t.description
+                            "test_type": k.test_type.value,
+                            "template_code": k.template_code,
+                            "description": k.description
                         }
-                        for t in templates
+                        for k in page_knowledge
                     ]
                     
                     selectors_data = [

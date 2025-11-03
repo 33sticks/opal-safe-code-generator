@@ -320,16 +320,16 @@ class TestDeleteBrand:
         assert create_response.status_code == 201
         brand_id = create_response.json()["id"]
         
-        # Create a template for this brand
-        template_response = await test_client.post(
-            "/api/v1/templates/",
+        # Create page type knowledge for this brand
+        knowledge_response = await test_client.post(
+            "/api/v1/page-type-knowledge/",
             json={
                 "brand_id": brand_id,
                 "test_type": "pdp",
                 "template_code": "<div>Test</div>"
             }
         )
-        assert template_response.status_code == 201
+        assert knowledge_response.status_code == 201
         
         # Delete the brand
         delete_response = await test_client.delete(f"/api/v1/brands/{brand_id}")

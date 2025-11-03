@@ -30,7 +30,7 @@ class CodeGeneratorService:
     async def generate_code(
         self,
         brand_context: Dict[str, Any],
-        templates: List[Dict[str, Any]],
+        templates: List[Dict[str, Any]],  # Parameter name kept as 'templates' for backward compatibility
         selectors: List[Dict[str, Any]],
         rules: List[Dict[str, Any]],
         test_description: str
@@ -40,7 +40,7 @@ class CodeGeneratorService:
         
         Args:
             brand_context: Dict with brand name, domain, etc.
-            templates: List of template dicts with test_type, template_code, etc.
+            templates: List of page type knowledge dicts with test_type, template_code, etc. (kept parameter name for backward compatibility)
             selectors: List of selector dicts with selector, description, etc.
             rules: List of rule dicts with rule_type, rule_content, etc.
             test_description: User's description of what the test should do
@@ -121,7 +121,7 @@ class CodeGeneratorService:
             
             # Calculate confidence score and breakdown
             confidence_result = self._calculate_confidence(
-                generated_code, templates, validation_results
+                generated_code, templates, validation_results  # templates contains page knowledge data
             )
             confidence_score = confidence_result["confidence_score"]
             confidence_breakdown = confidence_result["confidence_breakdown"]
@@ -219,25 +219,25 @@ class CodeGeneratorService:
             template_text += "9. Use LOG_PREFIX constant for all console.log statements\n"
             template_text += "10. Use the log() utility function instead of direct console.log\n\n"
             
-            # Add page template as reference for page-specific logic
+            # Add page knowledge as reference for page-specific logic
             if templates:
-                page_template = templates[0]
-                template_text += f"PAGE TEMPLATE (Reference for page-specific logic patterns):\n"
-                template_text += f"Test Type: {page_template.get('test_type', 'unknown')}\n"
-                template_text += f"```javascript\n{page_template.get('template_code', '')}\n```\n\n"
-                template_text += "Use the page template above as a REFERENCE for:\n"
+                page_knowledge = templates[0]
+                template_text += f"PAGE TYPE KNOWLEDGE (Reference for page-specific logic patterns):\n"
+                template_text += f"Test Type: {page_knowledge.get('test_type', 'unknown')}\n"
+                template_text += f"```javascript\n{page_knowledge.get('template_code', '')}\n```\n\n"
+                template_text += "Use the page knowledge above as a REFERENCE for:\n"
                 template_text += "- How to structure page-specific DOM queries\n"
                 template_text += "- How to handle element validation\n"
                 template_text += "- How to structure the logic within the main execution section\n"
         else:
-            # No global template - use page template as before
-            template_text = "Template Example:\n"
+            # No global template - use page knowledge as reference
+            template_text = "Page Type Knowledge Example:\n"
             if templates:
-                template = templates[0]  # Use first template
-                template_text += f"Test Type: {template.get('test_type', 'unknown')}\n"
-                template_text += f"Template Code:\n```javascript\n{template.get('template_code', '')}\n```\n"
+                page_knowledge = templates[0]  # Use first page knowledge entry
+                template_text += f"Test Type: {page_knowledge.get('test_type', 'unknown')}\n"
+                template_text += f"Knowledge Code:\n```javascript\n{page_knowledge.get('template_code', '')}\n```\n"
             else:
-                template_text += "No template available - generate safe JavaScript following best practices\n"
+                template_text += "No page knowledge available - generate safe JavaScript following best practices\n"
         
         # Build prompt
         if global_template:
@@ -307,7 +307,7 @@ Test Description:
 Requirements:
 1. Generate safe JavaScript code that does NOT use: eval(), innerHTML, document.write(), or any forbidden patterns
 2. Use only the available DOM selectors listed above
-3. Follow the template structure and patterns shown
+3. Follow the page knowledge structure and patterns shown
 4. Ensure the code is production-ready and follows JavaScript best practices
 5. Include comments explaining key logic
 
@@ -650,7 +650,7 @@ Example of WRONG format (do not do this):
         Calculate confidence score and breakdown for generated code.
         
         Scoring:
-        - Template adherence: 30%
+        - Page knowledge adherence: 30% (how well code matches page knowledge patterns)
         - Rule compliance: 40%
         - Selector validation: 30%
         
@@ -661,31 +661,31 @@ Example of WRONG format (do not do this):
         rule_score = 0.0
         selector_score = 0.0
         
-        # Template adherence (30%)
+        # Page knowledge adherence (30%)
         if templates:
-            template = templates[0]
-            template_code = template.get("template_code", "").lower()
+            page_knowledge = templates[0]  # templates contains page knowledge data
+            knowledge_code = page_knowledge.get("template_code", "").lower()
             # Check if generated code uses similar patterns
             # Simple heuristic: check for common function patterns
-            template_functions = set(re.findall(r'\bfunction\s+(\w+)', template_code))
+            knowledge_functions = set(re.findall(r'\bfunction\s+(\w+)', knowledge_code))
             code_functions = set(re.findall(r'\bfunction\s+(\w+)', code.lower()))
             
-            if template_functions:
-                overlap = len(template_functions & code_functions) / len(template_functions)
+            if knowledge_functions:
+                overlap = len(knowledge_functions & code_functions) / len(knowledge_functions)
                 template_score = overlap * 0.3
             else:
                 # If no functions, check for similar structure
-                if 'querySelector' in template_code and 'querySelector' in code.lower():
+                if 'querySelector' in knowledge_code and 'querySelector' in code.lower():
                     template_score = 0.2
-                elif template_code and code:
+                elif knowledge_code and code:
                     # Basic similarity check
-                    template_keywords = set(template_code.split())
+                    knowledge_keywords = set(knowledge_code.split())
                     code_keywords = set(code.lower().split())
-                    common = template_keywords & code_keywords
-                    if template_keywords:
-                        template_score = (len(common) / len(template_keywords)) * 0.3
+                    common = knowledge_keywords & code_keywords
+                    if knowledge_keywords:
+                        template_score = (len(common) / len(knowledge_keywords)) * 0.3
         else:
-            template_score = 0.1  # Low score if no template
+            template_score = 0.1  # Low score if no page knowledge
         
         # Rule compliance (40%)
         if validation_results["is_valid"]:

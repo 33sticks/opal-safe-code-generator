@@ -20,7 +20,7 @@ class Brand(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    templates = relationship("Template", back_populates="brand", cascade="all, delete-orphan")
+    page_type_knowledge = relationship("PageTypeKnowledge", back_populates="brand", cascade="all, delete-orphan")
     selectors = relationship("DOMSelector", back_populates="brand", cascade="all, delete-orphan")
     rules = relationship("CodeRule", back_populates="brand", cascade="all, delete-orphan")
     generated_code = relationship("GeneratedCode", back_populates="brand", cascade="all, delete-orphan")

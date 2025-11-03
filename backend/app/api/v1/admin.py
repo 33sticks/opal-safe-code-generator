@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.api.deps import get_db
-from app.models import Brand, Template, DOMSelector, CodeRule, User
+from app.models import Brand, PageTypeKnowledge, DOMSelector, CodeRule, User
 from app.models.enums import UserRole, BrandStatus
 from datetime import datetime
 
@@ -130,12 +130,12 @@ if (!utils) {
         else:
             timberland = timberland_brand
         
-        # Create PDP template for VANS if it doesn't exist
-        existing_template = await db.execute(
-            select(Template).where(Template.brand_id == vans.id, Template.test_type == "pdp")
+        # Create PDP page type knowledge for VANS if it doesn't exist
+        existing_knowledge = await db.execute(
+            select(PageTypeKnowledge).where(PageTypeKnowledge.brand_id == vans.id, PageTypeKnowledge.test_type == "pdp")
         )
-        if not existing_template.scalar_one_or_none():
-            pdp_template = Template(
+        if not existing_knowledge.scalar_one_or_none():
+            pdp_knowledge = PageTypeKnowledge(
                 brand_id=vans.id,
                 test_type="pdp",
                 template_code="""'use strict';
@@ -165,7 +165,7 @@ utils.waitForElement("button[data-test-id='vf-button']", 10000).then(function(ad
                 version="1.0",
                 is_active=True
             )
-            db.add(pdp_template)
+            db.add(pdp_knowledge)
         
         # Create selectors for VANS PDP if they don't exist
         selector_data = [
@@ -264,7 +264,7 @@ utils.waitForElement("button[data-test-id='vf-button']", 10000).then(function(ad
                 "user": user_created
             },
             "vans_data": {
-                "templates": 1,
+                "page_type_knowledge": 1,
                 "selectors": 2,
                 "rules": 7
             }

@@ -64,46 +64,46 @@ curl -X GET "$BASE_URL/brands/?skip=0&limit=10" \
   -w "\nStatus: %{http_code}\n\n"
 
 echo ""
-echo -e "${BLUE}=== Testing Templates API ===${NC}"
+echo -e "${BLUE}=== Testing Page Type Knowledge API ===${NC}"
 echo ""
 
-echo "6. GET /templates/ - List all templates"
-curl -X GET "$BASE_URL/templates/" \
+echo "6. GET /page-type-knowledge/ - List all page type knowledge"
+curl -X GET "$BASE_URL/page-type-knowledge/" \
   -H "Content-Type: application/json" \
   -w "\nStatus: %{http_code}\n\n"
 
-echo "7. POST /templates/ - Create a new template"
-TEMPLATE_RESPONSE=$(curl -s -X POST "$BASE_URL/templates/" \
+echo "7. POST /page-type-knowledge/ - Create a new page type knowledge entry"
+TEMPLATE_RESPONSE=$(curl -s -X POST "$BASE_URL/page-type-knowledge/" \
   -H "Content-Type: application/json" \
   -d "{
     \"brand_id\": $BRAND_ID,
     \"test_type\": \"pdp\",
-    \"template_code\": \"<div>API Test Template</div>\",
-    \"description\": \"Test template created via API\",
+    \"template_code\": \"<div>API Test Knowledge</div>\",
+    \"description\": \"Test page knowledge created via API\",
     \"version\": \"1.0\",
     \"is_active\": true
   }")
 echo "$TEMPLATE_RESPONSE"
 TEMPLATE_ID=$(echo "$TEMPLATE_RESPONSE" | grep -o '"id":[0-9]*' | grep -o '[0-9]*')
-echo "Created Template ID: $TEMPLATE_ID"
+echo "Created Page Type Knowledge ID: $TEMPLATE_ID"
 echo ""
 
-echo "8. GET /templates/{id} - Get template by ID"
-curl -X GET "$BASE_URL/templates/$TEMPLATE_ID" \
+echo "8. GET /page-type-knowledge/{id} - Get page type knowledge by ID"
+curl -X GET "$BASE_URL/page-type-knowledge/$TEMPLATE_ID" \
   -H "Content-Type: application/json" \
   -w "\nStatus: %{http_code}\n\n"
 
-echo "9. PUT /templates/{id} - Update template"
-curl -X PUT "$BASE_URL/templates/$TEMPLATE_ID" \
+echo "9. PUT /page-type-knowledge/{id} - Update page type knowledge"
+curl -X PUT "$BASE_URL/page-type-knowledge/$TEMPLATE_ID" \
   -H "Content-Type: application/json" \
   -d '{
-    "template_code": "<div>Updated API Test Template</div>",
+    "template_code": "<div>Updated API Test Knowledge</div>",
     "description": "Updated description"
   }' \
   -w "\nStatus: %{http_code}\n\n"
 
-echo "10. GET /templates/?brand_id={id} - Filter templates by brand"
-curl -X GET "$BASE_URL/templates/?brand_id=$BRAND_ID" \
+echo "10. GET /page-type-knowledge/?brand_id={id} - Filter page type knowledge by brand"
+curl -X GET "$BASE_URL/page-type-knowledge/?brand_id=$BRAND_ID" \
   -H "Content-Type: application/json" \
   -w "\nStatus: %{http_code}\n\n"
 
@@ -231,8 +231,8 @@ curl -X POST "$BASE_URL/brands/" \
   }" \
   -w "\nStatus: %{http_code}\n\n"
 
-echo "26. POST /templates/ - Invalid brand_id (404)"
-curl -X POST "$BASE_URL/templates/" \
+echo "26. POST /page-type-knowledge/ - Invalid brand_id (404)"
+curl -X POST "$BASE_URL/page-type-knowledge/" \
   -H "Content-Type: application/json" \
   -d '{
     "brand_id": 99999,
@@ -264,8 +264,8 @@ curl -X DELETE "$BASE_URL/selectors/$SELECTOR_ID" \
   -H "Content-Type: application/json" \
   -w "\nStatus: %{http_code}\n\n"
 
-echo "30. DELETE /templates/{id}"
-curl -X DELETE "$BASE_URL/templates/$TEMPLATE_ID" \
+echo "30. DELETE /page-type-knowledge/{id}"
+curl -X DELETE "$BASE_URL/page-type-knowledge/$TEMPLATE_ID" \
   -H "Content-Type: application/json" \
   -w "\nStatus: %{http_code}\n\n"
 
