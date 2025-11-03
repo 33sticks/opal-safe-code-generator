@@ -37,7 +37,7 @@ BRAND_RESPONSE=$(curl -s -X POST "$BASE_URL/brands/" \
     "name": "API Test Brand",
     "domain": "apitest.com",
     "status": "active",
-    "config": {"test": true}
+    "code_template": {"test": true}
   }')
 echo "$BRAND_RESPONSE"
 BRAND_ID=$(echo "$BRAND_RESPONSE" | grep -o '"id":[0-9]*' | grep -o '[0-9]*')

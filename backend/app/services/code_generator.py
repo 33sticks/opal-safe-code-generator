@@ -98,7 +98,7 @@ class CodeGeneratorService:
                     logger.warning("Truncation detected due to token limit - consider increasing max_tokens further")
             
             # Replace placeholders in generated code if global template was used
-            global_template = brand_context.get("config", {}).get("global_template")
+            global_template = brand_context.get("code_template", {}).get("global_template")
             if global_template:
                 logger.info("Global template detected - replacing placeholders in generated code")
                 generated_code = self._replace_placeholders(
@@ -157,8 +157,8 @@ class CodeGeneratorService:
         """Build comprehensive prompt for Claude."""
         brand_name = brand_context.get("name", "Unknown")
         brand_domain = brand_context.get("domain", "")
-        brand_config = brand_context.get("config", {})
-        global_template = brand_config.get("global_template")
+        brand_code_template = brand_context.get("code_template", {})
+        global_template = brand_code_template.get("global_template")
         
         # Build selectors section
         selectors_text = "Available DOM Selectors:\n"

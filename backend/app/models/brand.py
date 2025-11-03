@@ -15,7 +15,7 @@ class Brand(Base):
     name = Column(String(255), nullable=False, unique=True, index=True)
     domain = Column(String(255), nullable=False)
     status = Column(SQLEnum(BrandStatus, native_enum=False, length=50), nullable=False, default=BrandStatus.ACTIVE)
-    config = Column(JSON, nullable=True, default={})
+    code_template = Column(JSON, nullable=True, default={})
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

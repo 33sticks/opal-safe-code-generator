@@ -27,7 +27,7 @@ class TestListBrands:
                 "name": unique_name,
                 "domain": f"test{uuid.uuid4().hex[:8]}.com",
                 "status": "active",
-                "config": {"test": "data"}
+                "code_template": {"test": "data"}
             }
         )
         assert create_response.status_code == 201
@@ -81,7 +81,7 @@ class TestCreateBrand:
                 "name": unique_name,
                 "domain": f"newbrand{uuid.uuid4().hex[:8]}.com",
                 "status": "active",
-                "config": {"theme": "modern"}
+                "code_template": {"theme": "modern"}
             }
         )
         assert response.status_code == 201

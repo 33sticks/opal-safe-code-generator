@@ -44,7 +44,7 @@ async def seed_data():
                 name="VANS",
                 domain="vans.com",
                 status=BrandStatus.ACTIVE,
-                config={
+                code_template={
                     "theme": "skate",
                     "region": "US",
                     "currency": "USD",
@@ -308,7 +308,7 @@ function testCheckoutPage() {
                 name="Timberland",
                 domain="timberland.com",
                 status=BrandStatus.ACTIVE,
-                config={"theme": "outdoor", "region": "US", "currency": "USD"}
+                code_template={"theme": "outdoor", "region": "US", "currency": "USD"}
             )
             session.add(timberland_brand)
             await session.flush()

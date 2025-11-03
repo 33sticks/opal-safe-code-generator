@@ -10,7 +10,7 @@ class BrandBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     domain: str = Field(..., min_length=1, max_length=255)
     status: BrandStatus = BrandStatus.ACTIVE
-    config: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    code_template: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 
 class BrandCreate(BrandBase):
@@ -23,7 +23,7 @@ class BrandUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     domain: Optional[str] = Field(None, min_length=1, max_length=255)
     status: Optional[BrandStatus] = None
-    config: Optional[Dict[str, Any]] = None
+    code_template: Optional[Dict[str, Any]] = None
 
 
 class BrandResponse(BrandBase):

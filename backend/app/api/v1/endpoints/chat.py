@@ -437,7 +437,7 @@ async def send_message(
                         "name": brand.name,
                         "domain": brand.domain,
                         "id": brand.id,
-                        "config": brand.config or {}
+                        "code_template": brand.code_template or {}
                     }
                     
                     templates_data = [

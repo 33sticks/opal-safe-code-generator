@@ -163,7 +163,7 @@ async def generate_code(
             "name": brand.name,
             "domain": brand.domain,
             "id": brand.id,
-            "config": brand.config or {}  # Include brand config (may contain global_template)
+            "code_template": brand.code_template or {}  # Include brand code_template (may contain global_template)
         }
         
         templates_data = [
