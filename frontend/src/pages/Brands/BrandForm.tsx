@@ -37,7 +37,7 @@ const brandSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   domain: z.string().min(1, 'Domain is required').max(255),
   status: z.nativeEnum(BrandStatus),
-  config: z.string().optional(),
+  code_template: z.string().optional(),
 })
 
 type BrandFormValues = z.infer<typeof brandSchema>
@@ -60,7 +60,7 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
       name: '',
       domain: '',
       status: BrandStatus.ACTIVE,
-      config: '',
+      code_template: '',
     },
   })
 
@@ -70,28 +70,28 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
         name: brand.name,
         domain: brand.domain,
         status: brand.status,
-        config: JSON.stringify(brand.config || {}, null, 2),
+        code_template: JSON.stringify(brand.code_template || {}, null, 2),
       })
     } else {
       form.reset({
         name: '',
         domain: '',
         status: BrandStatus.ACTIVE,
-        config: '',
+        code_template: '',
       })
     }
   }, [brand, brandId, form])
 
   const onSubmit = async (values: BrandFormValues) => {
     try {
-      let configObj = {}
-      if (values.config) {
+      let codeTemplateObj = {}
+      if (values.code_template) {
         try {
-          configObj = JSON.parse(values.config)
+          codeTemplateObj = JSON.parse(values.code_template)
         } catch {
           toast({
             title: 'Invalid JSON',
-            description: 'Config must be valid JSON',
+            description: 'Code template must be valid JSON',
             variant: 'destructive',
           })
           return
@@ -104,7 +104,7 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
           name: values.name,
           domain: values.domain,
           status: values.status,
-          config: configObj,
+          code_template: codeTemplateObj,
         })
         toast({
           title: 'Success',
@@ -115,7 +115,7 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
           name: values.name,
           domain: values.domain,
           status: values.status,
-          config: configObj,
+          code_template: codeTemplateObj,
         })
         toast({
           title: 'Success',
@@ -205,10 +205,10 @@ export function BrandForm({ open, onOpenChange, brandId }: BrandFormProps) {
 
               <FormField
                 control={form.control}
-                name="config"
+                name="code_template"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Config (JSON)</FormLabel>
+                    <FormLabel>Code Template (JSON)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder='{"key": "value"}'

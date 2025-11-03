@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTemplates, useDeleteTemplate } from '@/hooks/useApi'
+import { usePageTypeKnowledge, useDeletePageTypeKnowledge } from '@/hooks/useApi'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -14,32 +14,32 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useToast } from '@/hooks/use-toast'
-import { Template } from '@/types'
+import { PageTypeKnowledge } from '@/types'
 import { format } from 'date-fns'
 
-interface TemplatesTableProps {
+interface PageTypeKnowledgeTableProps {
   onEdit: (id: number) => void
 }
 
-export function TemplatesTable({ onEdit }: TemplatesTableProps) {
-  const { data: templates, isLoading, error } = useTemplates()
-  const deleteTemplate = useDeleteTemplate()
+export function PageTypeKnowledgeTable({ onEdit }: PageTypeKnowledgeTableProps) {
+  const { data: knowledge, isLoading, error } = usePageTypeKnowledge()
+  const deleteKnowledge = useDeletePageTypeKnowledge()
   const { toast } = useToast()
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
   const handleDelete = async () => {
     if (!deleteId) return
     try {
-      await deleteTemplate.mutateAsync(deleteId)
+      await deleteKnowledge.mutateAsync(deleteId)
       toast({
         title: 'Success',
-        description: 'Template deleted successfully',
+        description: 'Page knowledge deleted successfully',
       })
       setDeleteId(null)
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to delete template',
+        description: err instanceof Error ? err.message : 'Failed to delete page knowledge',
         variant: 'destructive',
       })
     }
@@ -56,13 +56,13 @@ export function TemplatesTable({ onEdit }: TemplatesTableProps) {
   if (error) {
     return (
       <div className="py-8 text-center text-destructive">
-        Error loading templates: {error.message}
+        Error loading page knowledge: {error.message}
       </div>
     )
   }
 
-  if (!templates || templates.length === 0) {
-    return <EmptyState title="No templates found" description="Create your first template to get started." />
+  if (!knowledge || knowledge.length === 0) {
+    return <EmptyState title="No page knowledge found" description="Add your first page knowledge entry to get started." />
   }
 
   return (
@@ -81,35 +81,35 @@ export function TemplatesTable({ onEdit }: TemplatesTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {templates.map((template: Template) => (
-              <TableRow key={template.id}>
-                <TableCell>{template.id}</TableCell>
-                <TableCell>{template.brand_name || `Brand ${template.brand_id}`}</TableCell>
-                <TableCell className="font-medium">{template.test_type}</TableCell>
-                <TableCell>{template.version}</TableCell>
+            {knowledge.map((item: PageTypeKnowledge) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.id}</TableCell>
+                <TableCell>{item.brand_name || `Brand ${item.brand_id}`}</TableCell>
+                <TableCell className="font-medium">{item.test_type}</TableCell>
+                <TableCell>{item.version}</TableCell>
                 <TableCell>
-                  {template.is_active ? (
+                  {item.is_active ? (
                     <span className="text-green-600">Yes</span>
                   ) : (
                     <span className="text-muted-foreground">No</span>
                   )}
                 </TableCell>
                 <TableCell>
-                  {format(new Date(template.created_at), 'MMM d, yyyy')}
+                  {format(new Date(item.created_at), 'MMM d, yyyy')}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onEdit(template.id)}
+                      onClick={() => onEdit(item.id)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setDeleteId(template.id)}
+                      onClick={() => setDeleteId(item.id)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -125,8 +125,8 @@ export function TemplatesTable({ onEdit }: TemplatesTableProps) {
         open={deleteId !== null}
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={handleDelete}
-        title="Delete Template"
-        description={`Are you sure you want to delete this template? This action cannot be undone.`}
+        title="Delete Page Knowledge"
+        description={`Are you sure you want to delete this page knowledge entry? This action cannot be undone.`}
       />
     </>
   )

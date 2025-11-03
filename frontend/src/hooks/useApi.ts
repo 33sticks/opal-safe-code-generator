@@ -15,9 +15,9 @@ import type {
   Brand,
   BrandCreate,
   BrandUpdate,
-  Template,
-  TemplateCreate,
-  TemplateUpdate,
+  PageTypeKnowledge,
+  PageTypeKnowledgeCreate,
+  PageTypeKnowledgeUpdate,
   DOMSelector,
   DOMSelectorCreate,
   DOMSelectorUpdate,
@@ -83,55 +83,55 @@ export function useDeleteBrand() {
   })
 }
 
-// Templates
-export function useTemplates() {
-  return useQuery<Template[]>({
-    queryKey: ['templates'],
+// Page Type Knowledge
+export function usePageTypeKnowledge() {
+  return useQuery<PageTypeKnowledge[]>({
+    queryKey: ['page-type-knowledge'],
     queryFn: async () => {
-      const { data } = await api.get<Template[]>('/templates/')
+      const { data } = await api.get<PageTypeKnowledge[]>('/page-type-knowledge/')
       return data
     },
   })
 }
 
-export function useTemplate(id: number) {
-  return useQuery<Template>({
-    queryKey: ['templates', id],
+export function usePageTypeKnowledgeItem(id: number) {
+  return useQuery<PageTypeKnowledge>({
+    queryKey: ['page-type-knowledge', id],
     queryFn: async () => {
-      const { data } = await api.get<Template>(`/templates/${id}`)
+      const { data } = await api.get<PageTypeKnowledge>(`/page-type-knowledge/${id}`)
       return data
     },
     enabled: !!id,
   })
 }
 
-export function useCreateTemplate() {
+export function useCreatePageTypeKnowledge() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (template: TemplateCreate) => api.post<Template>('/templates/', template).then(res => res.data),
+    mutationFn: (knowledge: PageTypeKnowledgeCreate) => api.post<PageTypeKnowledge>('/page-type-knowledge/', knowledge).then(res => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      queryClient.invalidateQueries({ queryKey: ['page-type-knowledge'] })
     },
   })
 }
 
-export function useUpdateTemplate() {
+export function useUpdatePageTypeKnowledge() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...update }: { id: number } & TemplateUpdate) => 
-      api.put<Template>(`/templates/${id}`, update).then(res => res.data),
+    mutationFn: ({ id, ...update }: { id: number } & PageTypeKnowledgeUpdate) => 
+      api.put<PageTypeKnowledge>(`/page-type-knowledge/${id}`, update).then(res => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      queryClient.invalidateQueries({ queryKey: ['page-type-knowledge'] })
     },
   })
 }
 
-export function useDeleteTemplate() {
+export function useDeletePageTypeKnowledge() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/templates/${id}`).then(() => undefined),
+    mutationFn: (id: number) => api.delete(`/page-type-knowledge/${id}`).then(() => undefined),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      queryClient.invalidateQueries({ queryKey: ['page-type-knowledge'] })
     },
   })
 }

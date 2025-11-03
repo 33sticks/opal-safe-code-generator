@@ -8,7 +8,7 @@ import { Login } from '@/pages/Login'
 import { ForgotPassword } from '@/pages/ForgotPassword'
 import { Chat } from '@/pages/Chat'
 import { BrandsPage } from '@/pages/Brands/BrandsPage'
-import { TemplatesPage } from '@/pages/Templates/TemplatesPage'
+import { PageTypeKnowledgePage } from '@/pages/PageTypeKnowledge/PageTypeKnowledgePage'
 import { SelectorsPage } from '@/pages/Selectors/SelectorsPage'
 import { RulesPage } from '@/pages/Rules/RulesPage'
 import { GeneratedCodePage } from '@/pages/GeneratedCode/GeneratedCodePage'
@@ -68,11 +68,11 @@ function App() {
               }
             />
             <Route
-              path="/templates"
+              path="/page-type-knowledge"
               element={
                 <ProtectedRoute requiredRole="admin">
                   <Layout>
-                    <TemplatesPage />
+                    <PageTypeKnowledgePage />
                   </Layout>
                 </ProtectedRoute>
               }

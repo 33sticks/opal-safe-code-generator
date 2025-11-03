@@ -16,6 +16,7 @@ import { useCodeConversation, useReviewGeneratedCode } from '@/hooks/useApi'
 import { useToast } from '@/hooks/use-toast'
 import type { GeneratedCode } from '@/types'
 import type { Message } from '@/types/chat'
+import { AlertTriangle } from 'lucide-react'
 
 interface ReviewCodeModalProps {
   open: boolean
@@ -185,6 +186,27 @@ export function ReviewCodeModal({
         </DialogHeader>
 
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto space-y-6 min-h-0">
+          {/* Warning Banner for User-Provided Selectors */}
+          {code?.requires_review && code?.selector_source === 'user_provided' && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-yellow-900">User-Provided Selector - Requires Validation</h4>
+                  <p className="text-sm text-yellow-800 mt-1">
+                    This code uses a selector provided directly by the user:
+                    <code className="mx-1 px-2 py-0.5 bg-yellow-100 rounded font-mono text-xs">
+                      {code.selector_metadata?.selector_used || 'Unknown selector'}
+                    </code>
+                  </p>
+                  <p className="text-sm text-yellow-800 mt-2">
+                    ⚠️ Please verify this selector is correct before approving this code.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Conversation History */}
           <div>
             <h3 className="font-semibold mb-2">Conversation History:</h3>

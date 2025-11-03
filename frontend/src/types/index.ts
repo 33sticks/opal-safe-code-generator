@@ -76,7 +76,7 @@ export interface Brand {
   name: string
   domain: string
   status: BrandStatus
-  config: Record<string, any>
+  code_template: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -85,18 +85,18 @@ export interface BrandCreate {
   name: string
   domain: string
   status?: BrandStatus
-  config?: Record<string, any>
+  code_template?: Record<string, any>
 }
 
 export interface BrandUpdate {
   name?: string
   domain?: string
   status?: BrandStatus
-  config?: Record<string, any>
+  code_template?: Record<string, any>
 }
 
-// Template types
-export interface Template {
+// Page Type Knowledge types
+export interface PageTypeKnowledge {
   id: number
   brand_id: number
   test_type: TestType
@@ -109,7 +109,7 @@ export interface Template {
   brand_name?: string
 }
 
-export interface TemplateCreate {
+export interface PageTypeKnowledgeCreate {
   brand_id: number
   test_type: TestType
   template_code: string
@@ -118,7 +118,7 @@ export interface TemplateCreate {
   is_active?: boolean
 }
 
-export interface TemplateUpdate {
+export interface PageTypeKnowledgeUpdate {
   brand_id?: number
   test_type?: TestType
   template_code?: string
@@ -221,6 +221,15 @@ export interface GeneratedCode {
   conversation_preview?: string
   reviewer_email?: string
   confidence_breakdown?: ConfidenceBreakdown
+  // Selector validation fields
+  requires_review?: boolean
+  selector_source?: 'database' | 'user_provided'
+  selector_metadata?: {
+    selector_used: string
+    selector_source: string
+    requires_review: boolean
+    selector_validated: boolean
+  }
 }
 
 export interface GeneratedCodeCreate {

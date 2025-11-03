@@ -28,38 +28,38 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useTemplate, useCreateTemplate, useUpdateTemplate, useBrands } from '@/hooks/useApi'
+import { usePageTypeKnowledgeItem, useCreatePageTypeKnowledge, useUpdatePageTypeKnowledge, useBrands } from '@/hooks/useApi'
 import { useToast } from '@/hooks/use-toast'
 import { TestType } from '@/types'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { CodeEditor } from '@/components/monaco/CodeEditor'
 
-const templateSchema = z.object({
+const knowledgeSchema = z.object({
   brand_id: z.number().min(1, 'Brand is required'),
   test_type: z.nativeEnum(TestType),
-  template_code: z.string().min(1, 'Template code is required'),
+  template_code: z.string().min(1, 'Knowledge code is required'),
   description: z.string().optional(),
   version: z.string().max(50).default('1.0'),
   is_active: z.boolean().default(true),
 })
 
-type TemplateFormValues = z.infer<typeof templateSchema>
+type KnowledgeFormValues = z.infer<typeof knowledgeSchema>
 
-interface TemplatesFormProps {
+interface PageTypeKnowledgeFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  templateId?: number
+  knowledgeId?: number
 }
 
-export function TemplatesForm({ open, onOpenChange, templateId }: TemplatesFormProps) {
-  const { data: template, isLoading: isLoadingTemplate } = useTemplate(templateId || 0)
+export function PageTypeKnowledgeForm({ open, onOpenChange, knowledgeId }: PageTypeKnowledgeFormProps) {
+  const { data: knowledge, isLoading: isLoadingKnowledge } = usePageTypeKnowledgeItem(knowledgeId || 0)
   const { data: brands } = useBrands()
-  const createTemplate = useCreateTemplate()
-  const updateTemplate = useUpdateTemplate()
+  const createKnowledge = useCreatePageTypeKnowledge()
+  const updateKnowledge = useUpdatePageTypeKnowledge()
   const { toast } = useToast()
 
-  const form = useForm<TemplateFormValues>({
-    resolver: zodResolver(templateSchema),
+  const form = useForm<KnowledgeFormValues>({
+    resolver: zodResolver(knowledgeSchema),
     defaultValues: {
       brand_id: 0,
       test_type: TestType.PDP,
@@ -71,14 +71,14 @@ export function TemplatesForm({ open, onOpenChange, templateId }: TemplatesFormP
   })
 
   useEffect(() => {
-    if (template && templateId) {
+    if (knowledge && knowledgeId) {
       form.reset({
-        brand_id: template.brand_id,
-        test_type: template.test_type,
-        template_code: template.template_code,
-        description: template.description || '',
-        version: template.version,
-        is_active: template.is_active,
+        brand_id: knowledge.brand_id,
+        test_type: knowledge.test_type,
+        template_code: knowledge.template_code,
+        description: knowledge.description || '',
+        version: knowledge.version,
+        is_active: knowledge.is_active,
       })
     } else {
       form.reset({
@@ -90,24 +90,24 @@ export function TemplatesForm({ open, onOpenChange, templateId }: TemplatesFormP
         is_active: true,
       })
     }
-  }, [template, templateId, form, brands])
+  }, [knowledge, knowledgeId, form, brands])
 
-  const onSubmit = async (values: TemplateFormValues) => {
+  const onSubmit = async (values: KnowledgeFormValues) => {
     try {
-      if (templateId) {
-        await updateTemplate.mutateAsync({
-          id: templateId,
+      if (knowledgeId) {
+        await updateKnowledge.mutateAsync({
+          id: knowledgeId,
           ...values,
         })
         toast({
           title: 'Success',
-          description: 'Template updated successfully',
+          description: 'Page knowledge updated successfully',
         })
       } else {
-        await createTemplate.mutateAsync(values)
+        await createKnowledge.mutateAsync(values)
         toast({
           title: 'Success',
-          description: 'Template created successfully',
+          description: 'Page knowledge created successfully',
         })
       }
       onOpenChange(false)
@@ -121,19 +121,19 @@ export function TemplatesForm({ open, onOpenChange, templateId }: TemplatesFormP
     }
   }
 
-  const isLoading = isLoadingTemplate || createTemplate.isPending || updateTemplate.isPending
+  const isLoading = isLoadingKnowledge || createKnowledge.isPending || updateKnowledge.isPending
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{templateId ? 'Edit Template' : 'Create Template'}</DialogTitle>
+          <DialogTitle>{knowledgeId ? 'Edit Page Knowledge' : 'Add Page Knowledge'}</DialogTitle>
           <DialogDescription>
-            {templateId ? 'Update template information' : 'Add a new template to the system'}
+            {knowledgeId ? 'Update page knowledge information' : 'Add a new page knowledge entry to the system'}
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading && !template && templateId ? (
+        {isLoading && !knowledge && knowledgeId ? (
           <div className="flex justify-center py-8">
             <LoadingSpinner size="lg" />
           </div>
@@ -198,7 +198,7 @@ export function TemplatesForm({ open, onOpenChange, templateId }: TemplatesFormP
                 name="template_code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Template Code</FormLabel>
+                    <FormLabel>Knowledge Code</FormLabel>
                     <FormControl>
                       <CodeEditor
                         value={field.value}
@@ -219,7 +219,7 @@ export function TemplatesForm({ open, onOpenChange, templateId }: TemplatesFormP
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input placeholder="Template description" {...field} />
+                      <Input placeholder="Page knowledge description" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -272,10 +272,10 @@ export function TemplatesForm({ open, onOpenChange, templateId }: TemplatesFormP
                   {isLoading ? (
                     <>
                       <LoadingSpinner className="mr-2 h-4 w-4" />
-                      {templateId ? 'Updating...' : 'Creating...'}
+                      {knowledgeId ? 'Updating...' : 'Creating...'}
                     </>
                   ) : (
-                    templateId ? 'Update' : 'Create'
+                    knowledgeId ? 'Update' : 'Create'
                   )}
                 </Button>
               </DialogFooter>

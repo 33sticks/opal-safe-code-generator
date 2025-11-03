@@ -114,7 +114,7 @@ export function ConfidenceScoreBreakdown({
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              This score reflects how well the generated code matches your templates, follows your rules, and uses valid selectors.
+              This score reflects how well the generated code matches your page knowledge, follows your rules, and uses valid selectors.
             </p>
           </div>
 

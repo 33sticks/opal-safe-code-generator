@@ -1,49 +1,49 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { TemplatesTable } from './TemplatesTable'
-import { TemplatesForm } from './TemplatesForm'
+import { PageTypeKnowledgeTable } from './PageTypeKnowledgeTable'
+import { PageTypeKnowledgeForm } from './PageTypeKnowledgeForm'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export function TemplatesPage() {
+export function PageTypeKnowledgePage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [editingTemplate, setEditingTemplate] = useState<number | null>(null)
+  const [editingKnowledge, setEditingKnowledge] = useState<number | null>(null)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Templates</h1>
+          <h1 className="text-3xl font-bold">Page Type Knowledge</h1>
           <p className="text-muted-foreground">
-            Manage code templates for A/B tests
+            Manage page type knowledge for code generation
           </p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Template
+          Add Page Knowledge
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Templates</CardTitle>
+          <CardTitle>Page Knowledge Base</CardTitle>
         </CardHeader>
         <CardContent>
-          <TemplatesTable
-            onEdit={(id) => setEditingTemplate(id)}
+          <PageTypeKnowledgeTable
+            onEdit={(id) => setEditingKnowledge(id)}
           />
         </CardContent>
       </Card>
 
-      <TemplatesForm
-        open={isCreateDialogOpen || editingTemplate !== null}
+      <PageTypeKnowledgeForm
+        open={isCreateDialogOpen || editingKnowledge !== null}
         onOpenChange={(open) => {
           if (!open) {
             setIsCreateDialogOpen(false)
-            setEditingTemplate(null)
+            setEditingKnowledge(null)
           }
         }}
-        templateId={editingTemplate || undefined}
+        knowledgeId={editingKnowledge || undefined}
       />
     </div>
   )

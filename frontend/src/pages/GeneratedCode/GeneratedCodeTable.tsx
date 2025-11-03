@@ -29,7 +29,7 @@ import { ReviewCodeModal } from '@/components/admin/ReviewCodeModal'
 import { useCodeConversation } from '@/hooks/useApi'
 import { GeneratedCode, CodeStatus } from '@/types'
 import { formatDistanceToNow } from 'date-fns'
-import { MessageSquare, Eye, CheckCircle, XCircle, Trash2 } from 'lucide-react'
+import { MessageSquare, Eye, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export function GeneratedCodeTable() {
@@ -210,6 +210,12 @@ export function GeneratedCodeTable() {
                   </CardTitle>
                   <div className="flex items-center gap-3 mt-2">
                     <StatusBadge status={code.status} />
+                    {code.requires_review && (
+                      <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 text-yellow-800 px-2.5 py-0.5 text-xs font-semibold">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Review Required
+                      </span>
+                    )}
                     {code.confidence_score !== null && code.confidence_score !== undefined && (
                       <span className="text-sm text-muted-foreground">
                         Confidence: {Math.round(code.confidence_score * 100)}%

@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const superAdminNavigation = [
   { name: 'Brands', href: '/brands', icon: Building2 },
-  { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'Page Knowledge', href: '/page-type-knowledge', icon: FileText },
   { name: 'Selectors', href: '/selectors', icon: MousePointerClick },
   { name: 'Rules', href: '/rules', icon: Shield },
   { name: 'Generated Code', href: '/generated-code', icon: Code },
@@ -30,7 +30,7 @@ const superAdminNavigation = [
 ]
 
 const brandAdminNavigation = [
-  { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'Page Knowledge', href: '/page-type-knowledge', icon: FileText },
   { name: 'Selectors', href: '/selectors', icon: MousePointerClick },
   { name: 'Rules', href: '/rules', icon: Shield },
   { name: 'Generated Code', href: '/generated-code', icon: Code },
