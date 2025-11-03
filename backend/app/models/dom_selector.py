@@ -2,6 +2,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import JSONB
 from app.database import Base
 from app.models.enums import PageType, SelectorStatus
 
@@ -17,6 +18,7 @@ class DOMSelector(Base):
     selector = Column(Text, nullable=False)
     description = Column(String(500), nullable=True)
     status = Column(SQLEnum(SelectorStatus, native_enum=False, length=50), nullable=False, default=SelectorStatus.ACTIVE, index=True)
+    relationships = Column(JSONB, nullable=True, default={})
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

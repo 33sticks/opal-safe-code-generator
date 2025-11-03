@@ -1,5 +1,5 @@
 """DOM Selector Pydantic schemas."""
-from typing import Optional
+from typing import Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 from app.models.enums import PageType, SelectorStatus
@@ -12,6 +12,7 @@ class DOMSelectorBase(BaseModel):
     selector: str = Field(..., min_length=1)
     description: Optional[str] = Field(None, max_length=500)
     status: SelectorStatus = Field(default=SelectorStatus.ACTIVE)
+    relationships: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 
 class DOMSelectorCreate(DOMSelectorBase):
@@ -26,6 +27,7 @@ class DOMSelectorUpdate(BaseModel):
     selector: Optional[str] = Field(None, min_length=1)
     description: Optional[str] = Field(None, max_length=500)
     status: Optional[SelectorStatus] = None
+    relationships: Optional[Dict[str, Any]] = None
 
 
 class DOMSelectorResponse(DOMSelectorBase):
