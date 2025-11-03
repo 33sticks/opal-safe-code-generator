@@ -46,6 +46,23 @@ REQUIRED INFO FOR CODE GENERATION:
 - What change to make (color, text, visibility, position, etc.)
 - Desired outcome
 
+SELECTOR SEARCH GUIDANCE:
+When extracting element descriptions from user requests:
+1. Extract key elements they want to modify (buttons, images, text, links, etc.)
+2. The system uses semantic matching to find selectors - it understands:
+   - Element types (image, button, text, container)
+   - Synonyms and related terms (e.g., "product image" matches "picture" selector)
+   - Context keywords (e.g., "sibling", "child", "parent" for relationships)
+3. When multiple selectors match, the system will present options to the user
+4. When no exact match is found, the system will show available selectors for that page type
+5. Only ask for HTML paste if truly no relevant selectors exist
+
+ELEMENT DESCRIPTION TIPS:
+- Be specific: "product image" is better than "image"
+- Include context: "add to cart button" is better than "button"
+- Use natural language: "product title" or "price" work well
+- The system will match semantically, so "image" will find "picture" selectors
+
 When you have all required info, respond with JSON:
 {{
     "message": "Perfect! I have everything I need. Let me generate the code...",

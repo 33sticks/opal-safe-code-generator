@@ -115,7 +115,8 @@ async def validate_element_selector(
                     
                     if db_match:
                         # Selector exists in database
-                        logger.info(f"CSS selector found in database: {selector}")
+                        logger.info(f"CSS selector found in database (exact match): {selector}")
+                        logger.debug(f"Using matching strategy: explicit CSS selector from user message")
                         return {
                             "status": "found_in_db",
                             "is_valid": True,
@@ -168,7 +169,8 @@ async def validate_element_selector(
                             )
                             
                             if db_match:
-                                logger.info(f"User selected selector #{choice_num}: {selected_selector}")
+                                logger.info(f"User selected selector #{choice_num} from multiple choice: {selected_selector}")
+                                logger.debug(f"Using matching strategy: user selection from numbered options")
                                 return {
                                     "status": "found_in_db",
                                     "is_valid": True,
@@ -211,7 +213,9 @@ async def validate_element_selector(
         }
     
     # Perform fuzzy matching
+    logger.debug(f"Performing fuzzy matching on {len(all_selectors)} selectors")
     matches = _find_matching_selectors(element_desc, all_selectors)
+    logger.debug(f"Fuzzy matching found {len(matches)} candidates")
     
     # Check if user is selecting from fuzzy matches by number
     if user_message and len(matches) > 1:
@@ -220,7 +224,8 @@ async def validate_element_selector(
             # Validate choice number is within range
             if 1 <= choice_num <= len(matches):
                 selected_match = matches[choice_num - 1]  # Convert to 0-indexed
-                logger.info(f"User selected fuzzy match #{choice_num}: {selected_match.selector.selector}")
+                logger.info(f"User selected fuzzy match #{choice_num}: {selected_match.selector.selector} (score: {selected_match.confidence:.2f})")
+                logger.debug(f"Using matching strategy: user selection from fuzzy matches")
                 return {
                     "status": "found_in_db",
                     "is_valid": True,
@@ -243,7 +248,9 @@ async def validate_element_selector(
                 }
     
     if not matches:
-        # No matches found
+        # No matches found - show available selectors
+        logger.info(f"No matches found for '{element_description}', showing available selectors")
+        logger.debug(f"Using matching strategy: no match found, showing available selectors")
         return {
             "status": "not_found",
             "is_valid": False,
@@ -251,11 +258,13 @@ async def validate_element_selector(
             "source": None,
             "requires_review": False,
             "matches": [],
-            "message": _format_selector_not_found_message(element_description, page_type)
+            "message": _format_selector_not_found_message_with_options(element_description, page_type, all_selectors)
         }
     
     if len(matches) == 1:
         # Single match - valid
+        logger.info(f"Single fuzzy match found: {matches[0].selector.selector} (score: {matches[0].confidence:.2f})")
+        logger.debug(f"Using matching strategy: single fuzzy match")
         return {
             "status": "found_in_db",
             "is_valid": True,
@@ -267,6 +276,8 @@ async def validate_element_selector(
         }
     
     # Multiple matches - need user to choose
+    logger.info(f"Multiple fuzzy matches found ({len(matches)}), asking user to choose")
+    logger.debug(f"Using matching strategy: multiple fuzzy matches")
     return {
         "status": "multiple_matches",
         "is_valid": False,
@@ -283,12 +294,31 @@ def _find_matching_selectors(
     selectors: List[DOMSelector]
 ) -> List[SelectorMatch]:
     """
-    Find matching selectors using fuzzy matching.
+    Find matching selectors using enhanced semantic matching.
+    
+    Uses multi-factor scoring:
+    - Keyword overlap (40% weight)
+    - Element type matching from relationships (30% weight)
+    - Selector specificity bonus (20% weight)
+    - Relationship context (10% weight)
     
     Returns list of SelectorMatch objects sorted by confidence (highest first).
     """
+    logger.info(f"Searching for selectors matching: {element_desc}")
+    
     matches = []
     element_keywords = _extract_keywords(element_desc)
+    logger.debug(f"Extracted keywords: {element_keywords}")
+    
+    # Extract element type keywords from user request
+    element_type_keywords = _extract_element_type_keywords(element_desc, element_keywords)
+    
+    # Detect relationship keywords
+    has_sibling_context = any(word in element_desc.lower() for word in ["sibling", "siblings", "next to", "beside"])
+    has_child_context = any(word in element_desc.lower() for word in ["child", "children", "inside", "within", "contained"])
+    has_parent_context = any(word in element_desc.lower() for word in ["parent", "container", "wrapper"])
+    
+    logger.debug(f"Element type keywords: {element_type_keywords}, Relationship context: sibling={has_sibling_context}, child={has_child_context}, parent={has_parent_context}")
     
     for selector in selectors:
         selector_desc = (selector.description or "").strip().lower()
@@ -296,29 +326,178 @@ def _find_matching_selectors(
         if not selector_desc:
             continue
         
-        # Check exact match
-        if selector_desc == element_desc:
-            matches.append(SelectorMatch(selector, 1.0, "exact"))
-            continue
+        # Get relationships if available
+        relationships = selector.relationships or {}
         
-        # Check if element_desc is contained in selector description
-        if element_desc in selector_desc:
-            confidence = len(element_desc) / len(selector_desc) if selector_desc else 0
-            matches.append(SelectorMatch(selector, min(confidence, 0.9), "partial"))
-            continue
+        # Calculate multi-factor score
+        score = _score_selector_match(
+            element_desc=element_desc,
+            element_keywords=element_keywords,
+            element_type_keywords=element_type_keywords,
+            selector=selector,
+            selector_desc=selector_desc,
+            relationships=relationships,
+            has_sibling_context=has_sibling_context,
+            has_child_context=has_child_context,
+            has_parent_context=has_parent_context
+        )
         
-        # Check keyword overlap
-        selector_keywords = _extract_keywords(selector_desc)
-        keyword_overlap = _calculate_keyword_overlap(element_keywords, selector_keywords)
+        # Determine match type based on score
+        if score >= 0.9:
+            match_type = "exact"
+        elif score >= 0.7:
+            match_type = "partial"
+        elif score >= 0.2:  # Lowered threshold from 0.3
+            match_type = "keyword"
+        else:
+            continue  # Skip if score too low
         
-        if keyword_overlap > 0.3:  # Threshold for keyword match
-            matches.append(SelectorMatch(selector, keyword_overlap, "keyword"))
+        matches.append(SelectorMatch(selector, score, match_type))
+        logger.debug(f"Match found: {selector.selector} (score: {score:.2f}, type: {match_type})")
     
     # Sort by confidence (highest first)
     matches.sort(key=lambda x: x.confidence, reverse=True)
     
-    # Return top matches (limit to 5)
+    # Log top matches
+    if matches:
+        logger.info(f"Found {len(matches)} candidate matches")
+        top_matches_info = ", ".join([f"{m.selector.selector} ({m.confidence:.2f})" for m in matches[:3]])
+        logger.debug(f"Top matches: {top_matches_info}")
+    else:
+        logger.info(f"No matches found for: {element_desc}")
+    
+    # Return top 5 matches
     return matches[:5]
+
+
+def _extract_element_type_keywords(element_desc: str, keywords: List[str]) -> List[str]:
+    """
+    Extract element type keywords from user request.
+    
+    Maps common element descriptions to element types:
+    - image, picture, img, photo, graphic → image-related
+    - button, btn, click, cta → interactive/button
+    - link, anchor, a tag → interactive/link
+    - text, title, heading, h1-h6 → content/text
+    - input, field, form → interactive/form
+    - container, card, div, section → container
+    """
+    element_type_keywords = []
+    desc_lower = element_desc.lower()
+    
+    # Image-related keywords
+    image_keywords = ["image", "picture", "img", "photo", "graphic", "icon", "badge"]
+    if any(kw in desc_lower for kw in image_keywords):
+        element_type_keywords.extend(["image", "content", "picture"])
+    
+    # Button/interactive keywords
+    button_keywords = ["button", "btn", "click", "cta", "action", "submit"]
+    if any(kw in desc_lower for kw in button_keywords):
+        element_type_keywords.extend(["button", "interactive"])
+    
+    # Link keywords
+    link_keywords = ["link", "anchor", "url", "href"]
+    if any(kw in desc_lower for kw in link_keywords):
+        element_type_keywords.extend(["link", "interactive"])
+    
+    # Text/content keywords
+    text_keywords = ["text", "title", "heading", "h1", "h2", "h3", "label", "name", "description"]
+    if any(kw in desc_lower for kw in text_keywords):
+        element_type_keywords.extend(["text", "content"])
+    
+    # Form/input keywords
+    form_keywords = ["input", "field", "form", "textarea", "select"]
+    if any(kw in desc_lower for kw in form_keywords):
+        element_type_keywords.extend(["input", "interactive", "form"])
+    
+    # Container keywords
+    container_keywords = ["container", "card", "div", "section", "wrapper", "box"]
+    if any(kw in desc_lower for kw in container_keywords):
+        element_type_keywords.extend(["container"])
+    
+    return element_type_keywords
+
+
+def _score_selector_match(
+    element_desc: str,
+    element_keywords: List[str],
+    element_type_keywords: List[str],
+    selector: DOMSelector,
+    selector_desc: str,
+    relationships: Dict[str, Any],
+    has_sibling_context: bool,
+    has_child_context: bool,
+    has_parent_context: bool
+) -> float:
+    """
+    Calculate multi-factor score for selector matching.
+    
+    Scoring factors:
+    - Keyword overlap (40% weight)
+    - Element type matching (30% weight)
+    - Selector specificity (20% weight)
+    - Relationship context (10% weight)
+    
+    Returns:
+        Score between 0.0 and 1.0
+    """
+    score = 0.0
+    
+    # 1. Keyword matching (40% weight)
+    selector_keywords = _extract_keywords(selector_desc)
+    keyword_overlap = _calculate_keyword_overlap(element_keywords, selector_keywords)
+    score += keyword_overlap * 0.4
+    
+    # Check exact match
+    if selector_desc == element_desc:
+        return 1.0
+    
+    # Check if element_desc is contained in selector description
+    if element_desc in selector_desc:
+        confidence = len(element_desc) / len(selector_desc) if selector_desc else 0
+        score = max(score, min(confidence, 0.9))
+    
+    # 2. Element type matching (30% weight)
+    if relationships.get('element_type'):
+        element_type = str(relationships['element_type']).lower()
+        
+        # Check if element type matches user's element type keywords
+        if element_type_keywords:
+            if any(et_kw in element_type for et_kw in element_type_keywords):
+                score += 0.3
+            # Partial match (e.g., "content" matches "image" context)
+            elif 'content' in element_type and ('image' in element_type_keywords or 'picture' in element_type_keywords):
+                score += 0.2
+            elif 'interactive' in element_type and ('button' in element_type_keywords or 'link' in element_type_keywords):
+                score += 0.2
+    
+    # 3. Selector specificity bonus (20% weight)
+    selector_str = selector.selector.lower()
+    if 'data-test-id' in selector_str or 'data-testid' in selector_str:
+        score += 0.2
+    elif 'data-product-id' in selector_str or 'data-tracking-id' in selector_str:
+        score += 0.15
+    elif selector_str.startswith('#'):
+        score += 0.1  # ID selectors are more specific
+    elif selector_str.startswith('.'):
+        score += 0.05  # Class selectors, less specific
+    
+    # 4. Relationship context (10% weight)
+    if has_sibling_context and relationships.get('siblings'):
+        siblings = relationships.get('siblings', [])
+        if siblings:
+            score += 0.1
+    
+    if has_child_context and relationships.get('children'):
+        children = relationships.get('children', [])
+        if children:
+            score += 0.1
+    
+    if has_parent_context and relationships.get('parent'):
+        if relationships.get('parent'):
+            score += 0.1
+    
+    return min(score, 1.0)
 
 
 def _extract_keywords(text: str) -> List[str]:
@@ -378,6 +557,53 @@ To help me generate accurate code, please:
 Then paste it here, and I'll generate the code with the correct selector.
 
 Alternatively, if you know the CSS selector, you can provide it directly (e.g., ".product-title" or "#product-name")."""
+
+
+def _format_selector_not_found_message_with_options(
+    element_description: str, 
+    page_type: PageType,
+    available_selectors: List[DOMSelector]
+) -> str:
+    """
+    Format helpful message when selector is not found, showing available selectors.
+    
+    Shows top 5 most relevant selectors to help user choose or understand what's available.
+    """
+    page_type_upper = page_type.value.upper()
+    
+    # Show top 5 selectors (prioritize those with descriptions and data-test-id)
+    shown_selectors = []
+    for selector in available_selectors[:10]:  # Check more to find good ones
+        if selector.description:
+            shown_selectors.append(selector)
+        if len(shown_selectors) >= 5:
+            break
+    
+    # If we don't have 5 with descriptions, fill with any selectors
+    if len(shown_selectors) < 5:
+        for selector in available_selectors:
+            if selector not in shown_selectors:
+                shown_selectors.append(selector)
+            if len(shown_selectors) >= 5:
+                break
+    
+    message = f"""I couldn't find an exact match for "{element_description}" on the {page_type_upper} page."""
+
+    if shown_selectors:
+        message += f"\n\nHere are some selectors available on the {page_type_upper} page:\n\n"
+        for i, selector in enumerate(shown_selectors[:5], 1):
+            desc = selector.description or "No description"
+            message += f"{i}. {selector.selector} - {desc}\n"
+        
+        message += f"\nWould any of these work for your request?"
+        message += f"\n\nOr you can paste HTML from the page to discover new selectors."
+    else:
+        message += f"\n\nNo selectors are configured for the {page_type_upper} page yet."
+        message += f"\n\nTo help me generate accurate code, please paste the relevant HTML or provide a CSS selector."
+    
+    message += f"\n\nAlternatively, if you know the CSS selector, you can provide it directly (e.g., \".product-title\" or \"#product-name\")."
+    
+    return message
 
 
 def _format_no_selectors_message(element_description: str, page_type: PageType) -> str:
