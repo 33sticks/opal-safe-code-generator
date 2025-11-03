@@ -9,6 +9,7 @@ import api, {
   getUnreadCount,
   getMyRequests,
   createUser,
+  analyzeDom,
 } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 import type {
@@ -29,6 +30,7 @@ import type {
   CodeStatus,
   Notification,
   UnreadCount,
+  DomAnalysisResult,
 } from '@/types'
 
 // Brands
@@ -380,6 +382,13 @@ export function useCreateUser() {
         variant: 'destructive',
       })
     },
+  })
+}
+
+// DOM Analysis
+export function useAnalyzeDom() {
+  return useMutation<DomAnalysisResult, Error, { html: string; page_type: string; brand_id?: number }>({
+    mutationFn: analyzeDom,
   })
 }
 

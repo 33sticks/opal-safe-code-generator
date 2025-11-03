@@ -3,11 +3,14 @@ import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { SelectorsTable } from './SelectorsTable'
 import { SelectorsForm } from './SelectorsForm'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { DomAnalysisTool } from '@/components/selectors/DomAnalysisTool'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function SelectorsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingSelector, setEditingSelector] = useState<number | null>(null)
+  const { user } = useAuth()
 
   return (
     <div className="space-y-6">
@@ -23,6 +26,19 @@ export function SelectorsPage() {
           Create Selector
         </Button>
       </div>
+
+      {/* DOM Analysis Tool */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>🔍 DOM Structure Discovery (Beta)</CardTitle>
+          <CardDescription>
+            Paste HTML from your browser to automatically discover selectors
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DomAnalysisTool brandId={user?.brand_id || undefined} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

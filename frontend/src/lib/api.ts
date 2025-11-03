@@ -5,7 +5,7 @@ import type {
   ConversationHistoryResponse,
   ConversationForCodeResponse,
 } from '../types/chat'
-import type { GeneratedCode, CodeStatus, Notification, UnreadCount, User } from '../types'
+import type { GeneratedCode, CodeStatus, Notification, UnreadCount, User, DomAnalysisResult } from '../types'
 import type {
   AnalyticsOverview,
   UsageDataPoint,
@@ -211,6 +211,16 @@ export async function getLLMCosts(params: AnalyticsParams): Promise<LLMCostMetri
 
 export async function getLLMCostsByBrand(params: AnalyticsParams): Promise<BrandLLMCost[]> {
   const response = await api.get<BrandLLMCost[]>('/analytics/llm-costs-by-brand', { params })
+  return response.data
+}
+
+// DOM Analysis API functions
+export async function analyzeDom(data: {
+  html: string
+  page_type: string
+  brand_id?: number
+}): Promise<DomAnalysisResult> {
+  const response = await api.post<DomAnalysisResult>('/dom-analysis/', data)
   return response.data
 }
 

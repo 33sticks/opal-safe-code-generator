@@ -277,3 +277,28 @@ export interface Notification {
 export interface UnreadCount {
   count: number
 }
+
+// DOM Analysis types
+export interface DomSelector {
+  selector: string
+  description: string
+  stability_score: number
+  element_type: string
+  parent: string | null
+  children: string[]
+  siblings: string[]
+}
+
+export interface DomRelationships {
+  containers: string[]
+  interactive: string[]
+  content: string[]
+}
+
+export interface DomAnalysisResult {
+  selectors: DomSelector[]
+  relationships: DomRelationships
+  patterns: string[]
+  recommendations: string[]
+  warnings: string[]
+}
