@@ -29,3 +29,10 @@ class DomAnalysisResult(BaseModel):
     recommendations: List[str] = Field(..., description="Recommendations for selector stability and automation")
     warnings: List[str] = Field(default_factory=list, description="Warnings about unstable selectors or patterns")
 
+
+class DomAnalysisRequest(BaseModel):
+    """Request schema for DOM analysis endpoint."""
+    html: str = Field(..., description="HTML snippet to analyze")
+    page_type: str = Field(..., description="Type of page (e.g., 'pdp', 'cart', 'home')")
+    brand_id: Optional[int] = Field(None, description="Optional brand ID for context")
+
