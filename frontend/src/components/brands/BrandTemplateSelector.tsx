@@ -31,6 +31,21 @@ export function BrandTemplateSelector({
     }
   }, [templatesError, toast])
 
+  // Pre-select template if currentTemplate matches an available template
+  useEffect(() => {
+    if (currentTemplate && templates && templates.length > 0 && !selectedTemplateName) {
+      const templateName = (currentTemplate as { name?: string })?.name
+      if (templateName) {
+        const matchingTemplate = templates.find(
+          (t) => t.name.toLowerCase() === templateName.toLowerCase()
+        )
+        if (matchingTemplate) {
+          setSelectedTemplateName(matchingTemplate.name)
+        }
+      }
+    }
+  }, [currentTemplate, templates, selectedTemplateName])
+
   const handleTemplateChange = (templateName: string) => {
     if (templateName === 'custom') {
       setSelectedTemplateName(null)
