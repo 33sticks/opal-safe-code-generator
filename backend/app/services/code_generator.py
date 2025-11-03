@@ -173,6 +173,78 @@ class CodeGeneratorService:
         else:
             selectors_text += "- No selectors available for this page type\n"
         
+        # Format relationship context
+        relationship_context = self._format_relationship_context(selectors)
+        selectors_with_rels = [
+            s for s in selectors 
+            if s.get("relationships") and any(
+                s["relationships"].get(key) 
+                for key in ["parent", "siblings", "children"]
+                if isinstance(s["relationships"].get(key), (str, list)) and s["relationships"][key]
+            )
+        ]
+        
+        # Build relationship section
+        relationship_text = ""
+        if relationship_context and relationship_context != "No DOM relationship data available.":
+            logger.info(f"Including relationship data for {len(selectors_with_rels)} selectors")
+            logger.debug(f"Relationship context preview: {relationship_context[:200]}...")
+            
+            relationship_text = f"""
+IMPORTANT: DOM Structure and Relationships
+
+The following selectors have known relationships that help with DOM navigation:
+
+{relationship_context}
+
+NAVIGATION GUIDANCE:
+
+When navigating between related elements:
+
+1. If target is a SIBLING of found element:
+   - Navigate to common parent container first
+   - Then query for the sibling within that container
+   - Example: const container = element.closest('{{parent}}'); const sibling = container.querySelector('{{sibling_selector}}');
+
+2. If target is a CHILD of found element:
+   - Query directly within the found element
+   - Example: const child = element.querySelector('{{child_selector}}');
+
+3. If target is a PARENT of found element:
+   - Use closest() to navigate up the tree
+   - Example: const parent = element.closest('{{parent_selector}}');
+
+CRITICAL: NEVER use closest() to find siblings - this searches UP the tree, not across.
+ALWAYS navigate to a common container first, then query for siblings.
+
+NAVIGATION EXAMPLES:
+
+Example 1: Finding a sibling element (CORRECT vs INCORRECT)
+
+❌ INCORRECT (searches UP the tree, won't find sibling):
+const link = document.querySelector('a[data-test-id="product-link"]');
+const picture = link.closest('picture[data-test-id="base-picture"]'); // WRONG!
+
+✅ CORRECT (navigate to container, then find sibling):
+const link = document.querySelector('a[data-test-id="product-link"]');
+const container = link.closest('div.product-card'); // Go to parent
+const picture = container.querySelector('picture[data-test-id="base-picture"]'); // Find sibling
+
+Example 2: Adding element next to sibling (badge placement scenario)
+
+If user asks: "Add badge to product image"
+And you have: button selector with sibling picture
+
+const button = document.querySelector('button[data-test-id="add-to-cart"]');
+const container = button.closest('div.product-card'); // Common parent
+const picture = container.querySelector('picture[data-test-id="base-picture"]');
+const badge = document.createElement('span');
+badge.className = 'badge';
+badge.textContent = 'NEW';
+picture.parentElement.appendChild(badge); // Add to picture's parent
+
+"""
+        
         # Build rules section
         forbidden_patterns = [
             r["rule_content"] for r in rules 
@@ -244,7 +316,7 @@ class CodeGeneratorService:
             prompt = f"""You are a JavaScript code generator for A/B testing. Generate safe, production-ready JavaScript code for the {brand_name} brand ({brand_domain}).
 
 {selectors_text}
-
+{relationship_text}
 {rules_text}
 
 {template_text}
@@ -296,7 +368,7 @@ Example of WRONG format (do not do this):
             prompt = f"""You are a JavaScript code generator for A/B testing. Generate safe, production-ready JavaScript code for the {brand_name} brand ({brand_domain}).
 
 {selectors_text}
-
+{relationship_text}
 {rules_text}
 
 {template_text}
@@ -370,6 +442,68 @@ Example of WRONG format (do not do this):
                 features = [test_description[:100]]
         
         return features[:5]  # Limit to 5 features
+    
+    def _format_relationship_context(self, selectors: List[Dict[str, Any]]) -> str:
+        """
+        Format relationship data from selectors for inclusion in prompt.
+        
+        Only includes selectors that have relationship data. Returns formatted string
+        showing parent, siblings, and children for each selector.
+        
+        Args:
+            selectors: List of selector dicts with optional 'relationships' field
+            
+        Returns:
+            Formatted string with relationship information or "No DOM relationship data available."
+        """
+        # Filter selectors that have relationship data
+        selectors_with_rels = []
+        for selector in selectors:
+            relationships = selector.get("relationships") or {}
+            # Check if relationships dict has any non-empty values
+            if relationships and any(
+                relationships.get(key) 
+                for key in ["parent", "siblings", "children"]
+                if isinstance(relationships.get(key), (str, list)) and relationships[key]
+            ):
+                selectors_with_rels.append({
+                    "selector": selector.get("selector", ""),
+                    "relationships": relationships
+                })
+        
+        if not selectors_with_rels:
+            return "No DOM relationship data available."
+        
+        # Format relationships for prompt
+        formatted = []
+        for selector_obj in selectors_with_rels:
+            selector = selector_obj["selector"]
+            rels = selector_obj["relationships"]
+            
+            lines = [f"\nSelector: {selector}"]
+            
+            if rels.get("parent"):
+                lines.append(f"  - Parent: {rels['parent']}")
+            
+            if rels.get("siblings"):
+                siblings = rels["siblings"]
+                if isinstance(siblings, list) and siblings:
+                    siblings_str = ", ".join(siblings)
+                    lines.append(f"  - Siblings: {siblings_str}")
+            
+            if rels.get("children"):
+                children = rels["children"]
+                if isinstance(children, list) and children:
+                    children_str = ", ".join(children)
+                    lines.append(f"  - Children: {children_str}")
+                else:
+                    lines.append(f"  - Children: (none)")
+            else:
+                lines.append(f"  - Children: (none)")
+            
+            formatted.append("\n".join(lines))
+        
+        return "\n".join(formatted)
     
     def _replace_placeholders(
         self,

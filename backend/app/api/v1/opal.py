@@ -178,7 +178,8 @@ async def generate_code(
         selectors_data = [
             {
                 "selector": s.selector,
-                "description": s.description
+                "description": s.description,
+                "relationships": s.relationships or {}
             }
             for s in selectors
         ]
