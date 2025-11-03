@@ -57,7 +57,8 @@ async def validate_element_selector(
     element_description: str,
     page_type: PageType,
     brand_id: int,
-    user_message: Optional[str] = None
+    user_message: Optional[str] = None,
+    conversation_context: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Validate if an element description has matching selectors in the database.
@@ -70,6 +71,7 @@ async def validate_element_selector(
         page_type: Page type enum (PDP, CART, etc.)
         brand_id: Brand ID
         user_message: Optional user message to extract CSS selectors from
+        conversation_context: Optional list of recent conversation messages for context
         
     Returns:
         {
@@ -93,7 +95,10 @@ async def validate_element_selector(
             "message": None
         }
     
-    # PRIORITY 1: Check for CSS selectors in user message
+    # PRIORITY 1: Check for CSS selectors in user message (EXPLICIT USER INPUT)
+    # This takes precedence over number choices and fuzzy matches
+    # If user provides "use selector 3, but actually use #different-selector",
+    # the explicit selector wins
     if user_message:
         css_selectors = extract_css_selectors_from_message(user_message)
         
@@ -133,7 +138,52 @@ async def validate_element_selector(
                             "message": f"Using selector '{selector}' (not in database, will be flagged for admin review)"
                         }
     
-    # PRIORITY 2: Fall back to fuzzy matching if no valid CSS selector found
+    # PRIORITY 2: Check if user is responding to a multiple choice question (by number)
+    # Only check this if no explicit CSS selector was found
+    if user_message and conversation_context:
+        # Check if last assistant message was asking for a choice
+        if conversation_context:
+            # Look for previous "multiple selectors found" message
+            last_assistant_msg = None
+            for msg in reversed(conversation_context[-5:]):  # Check last 5 messages
+                if "found multiple selectors" in msg.lower() or "which selector should i use" in msg.lower():
+                    last_assistant_msg = msg
+                    break
+            
+            if last_assistant_msg:
+                # User might be responding to a choice - check for number selection
+                choice_num = extract_selector_choice_from_message(user_message)
+                
+                if choice_num:
+                    # Extract the selector from the previous message's options
+                    selected_selector = extract_selector_from_choice_message(last_assistant_msg, choice_num)
+                    
+                    if selected_selector:
+                        # Validate the selected selector
+                        validation = validate_selector_syntax(selected_selector)
+                        if validation["is_valid"]:
+                            # Check if it's in database
+                            db_match = await check_selector_in_database(
+                                db, selected_selector, brand_id, page_type
+                            )
+                            
+                            if db_match:
+                                logger.info(f"User selected selector #{choice_num}: {selected_selector}")
+                                return {
+                                    "status": "found_in_db",
+                                    "is_valid": True,
+                                    "selector": selected_selector,
+                                    "source": "database",
+                                    "requires_review": False,
+                                    "matches": [SelectorMatch(db_match, 1.0, "exact")],
+                                    "message": None
+                                }
+                    
+                    # If we got a choice number but couldn't extract selector, 
+                    # still check if the number is valid by looking at the matches format
+                    # We'll need the matches to validate the choice, so continue to fuzzy matching
+    
+    # PRIORITY 3: Fall back to fuzzy matching if no valid CSS selector found and no number choice
     # Normalize element description
     element_desc = element_description.strip().lower()
     
@@ -162,6 +212,35 @@ async def validate_element_selector(
     
     # Perform fuzzy matching
     matches = _find_matching_selectors(element_desc, all_selectors)
+    
+    # Check if user is selecting from fuzzy matches by number
+    if user_message and len(matches) > 1:
+        choice_num = extract_selector_choice_from_message(user_message)
+        if choice_num:
+            # Validate choice number is within range
+            if 1 <= choice_num <= len(matches):
+                selected_match = matches[choice_num - 1]  # Convert to 0-indexed
+                logger.info(f"User selected fuzzy match #{choice_num}: {selected_match.selector.selector}")
+                return {
+                    "status": "found_in_db",
+                    "is_valid": True,
+                    "selector": selected_match.selector.selector,
+                    "source": "database",
+                    "requires_review": False,
+                    "matches": [selected_match],
+                    "message": None
+                }
+            else:
+                # Invalid choice number
+                return {
+                    "status": "invalid_choice",
+                    "is_valid": False,
+                    "selector": None,
+                    "source": None,
+                    "requires_review": False,
+                    "matches": matches,
+                    "message": f"I only found {len(matches)} selectors. Please choose 1, 2, or {len(matches)}."
+                }
     
     if not matches:
         # No matches found
@@ -316,6 +395,93 @@ To help me generate accurate code, please:
 Then paste it here, and I'll generate the code with the correct selector.
 
 Alternatively, if you know the CSS selector, you can provide it directly (e.g., ".product-title" or "#product-name")."""
+
+
+def extract_selector_choice_from_message(message: str) -> Optional[int]:
+    """
+    Extract selector choice number from user message.
+    
+    Patterns to match:
+    - "use selector 3"
+    - "use option 2"
+    - "number 1"
+    - "use 2"
+    - "selector 3"
+    - Just "3" (if in context of choosing)
+    
+    Args:
+        message: User message text
+        
+    Returns:
+        Choice number (1-indexed) or None
+    """
+    if not message:
+        return None
+    
+    message_lower = message.lower().strip()
+    
+    # Pattern 1: "use selector/option X"
+    match = re.search(r'use\s+(?:selector|option)\s+(\d+)', message_lower)
+    if match:
+        return int(match.group(1))
+    
+    # Pattern 2: "selector/option X"
+    match = re.search(r'(?:selector|option)\s+(\d+)', message_lower)
+    if match:
+        return int(match.group(1))
+    
+    # Pattern 3: "number X" or "use X"
+    match = re.search(r'(?:number|use)\s+(\d+)', message_lower)
+    if match:
+        return int(match.group(1))
+    
+    # Pattern 4: Just a number (be careful - only if short message)
+    if re.match(r'^\d+$', message_lower.strip()) and len(message_lower.strip()) <= 2:
+        return int(message_lower.strip())
+    
+    return None
+
+
+def extract_selector_from_choice_message(message: str, choice_num: int) -> Optional[str]:
+    """
+    Extract selector from a numbered choice message.
+    
+    Looks for patterns like:
+    "1. description (selector: .selector)"
+    "1. selector-value"
+    
+    Args:
+        message: Message containing numbered options
+        choice_num: The choice number (1-indexed)
+        
+    Returns:
+        Selector string if found, None otherwise
+    """
+    if not message:
+        return None
+    
+    # Look for the line starting with the choice number
+    lines = message.split('\n')
+    for line in lines:
+        # Match: "N. ... (selector: ...)" - prioritize selector in parentheses
+        # Pattern matches: "1. description (selector: .selector)"
+        pattern1 = rf'^{choice_num}\.\s+.*?\(selector:\s*([^\)]+)\)'
+        match1 = re.search(pattern1, line, re.IGNORECASE)
+        if match1:
+            selector = match1.group(1).strip()
+            if selector:
+                return selector
+        
+        # Match: "N. selector-value" - fallback if no parentheses
+        # Only match if line is relatively short (likely just a selector)
+        pattern2 = rf'^{choice_num}\.\s+([^\s\)]+)(?:\s|$)'
+        match2 = re.search(pattern2, line, re.IGNORECASE)
+        if match2 and len(line.strip()) < 100:  # Short line likely just selector
+            selector = match2.group(1).strip()
+            if selector and not selector.startswith('('):  # Don't match if starts with (
+                return selector
+    
+    return None
 
 
 def _format_multiple_matches_message(element_description: str, matches: List[SelectorMatch]) -> str:

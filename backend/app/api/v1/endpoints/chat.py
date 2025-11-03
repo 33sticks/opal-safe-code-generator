@@ -301,14 +301,28 @@ async def send_message(
                     # Use new CSS selector validation flow (checks CSS first, then fuzzy matching)
                     if element_description and page_type_enum:
                         try:
+                            # Get conversation context for selector choice detection
+                            # Get recent messages from conversation (last 10 for context)
+                            conversation_messages_result = await db.execute(
+                                select(Message).where(Message.conversation_id == conversation.id)
+                                .order_by(Message.created_at.desc())
+                                .limit(10)
+                            )
+                            recent_messages = conversation_messages_result.scalars().all()
+                            # Build context list (reversed to chronological order, alternating user/assistant)
+                            conversation_context = []
+                            for msg in reversed(recent_messages):
+                                conversation_context.append(msg.content)
+                            
                             # Validate element description against database selectors
-                            # Pass user message for CSS selector extraction
+                            # Pass user message for CSS selector extraction and conversation context for choice detection
                             validation_result = await validate_element_selector(
                                 db=db,
                                 element_description=element_description,
                                 page_type=page_type_enum,
                                 brand_id=brand.id,
-                                user_message=request.message
+                                user_message=request.message,
+                                conversation_context=conversation_context
                             )
                             
                             if validation_result["status"] == "valid_but_not_in_db":
@@ -329,6 +343,13 @@ async def send_message(
                                 selector_source = "database"
                                 requires_admin_review = False
                                 logger.info(f"Selector found in database: {selector_to_use}")
+                                
+                            elif validation_result["status"] == "invalid_choice":
+                                # User chose invalid option number
+                                selector_validation_passed = False
+                                assistant_message_text = validation_result["message"]
+                                ready_to_generate = False
+                                assistant_message.content = assistant_message_text
                                 
                             elif validation_result["status"] == "multiple_matches":
                                 # Fuzzy matching found multiple - ask user to choose
@@ -495,6 +516,21 @@ async def send_message(
                     completion_tokens = result.get("completion_tokens", 0)
                     total_tokens = result.get("total_tokens", 0)
                     
+                    # Check for truncation
+                    is_truncated = result.get("is_truncated", False)
+                    stop_reason = result.get("stop_reason")
+                    
+                    # If code is truncated, add warning message to conversation
+                    if is_truncated:
+                        logger.warning(f"Generated code appears truncated. Stop reason: {stop_reason}")
+                        warning_message = Message(
+                            conversation_id=conversation.id,
+                            role="assistant",
+                            content="⚠️ The generated code may be incomplete. This can happen with very complex requests. Please review carefully and let me know if you need me to regenerate.",
+                        )
+                        db.add(warning_message)
+                        await db.commit()
+                    
                     # Calculate LLM cost
                     from app.core.constants import calculate_llm_cost
                     llm_cost_usd = calculate_llm_cost(prompt_tokens, completion_tokens) if prompt_tokens > 0 or completion_tokens > 0 else None
@@ -551,8 +587,8 @@ async def send_message(
                         User.brand_id == generated_code_record.brand_id,
                         User.brand_role == BrandRole.BRAND_ADMIN.value
                     )
-                    result = await db.execute(admin_query)
-                    brand_admins = result.scalars().all()
+                    admin_query_result = await db.execute(admin_query)
+                    brand_admins = admin_query_result.scalars().all()
                     
                     # Create notification for each brand admin
                     for admin in brand_admins:
@@ -612,7 +648,8 @@ async def send_message(
                         selector_source=selector_source_from_metadata,
                         selector_metadata=selector_metadata
                     )
-                    confidence_score = result["confidence_score"]
+                    # Use confidence_score from generated_code_record (already extracted from result)
+                    confidence_score = generated_code_record.confidence_score
                     response_status = "code_generated"
                     
             except Exception as e:
